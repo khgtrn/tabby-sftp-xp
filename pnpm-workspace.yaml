@@ -1,0 +1,5 @@
+allowBuilds:
+  '@parcel/watcher': true
+  cpu-features: true
+  ssh2: true
+  tabby-ssh: true

@@ -1,0 +1,1 @@
+{"version":3,"file":"settings-tab.provider.d.ts","sourceRoot":"","sources":["../../src/settings/settings-tab.provider.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,mBAAmB,EAAE,MAAM,gBAAgB,CAAC;AAGrD,cAAc;AACd,qBACa,yBAA0B,SAAQ,mBAAmB;IAChE,EAAE,SAAa;IACf,IAAI,SAAkB;IACtB,KAAK,SAAmB;IAExB,gBAAgB,IAAI,GAAG;CAGxB"}

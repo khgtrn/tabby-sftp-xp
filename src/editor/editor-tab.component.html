@@ -1,0 +1,58 @@
+<div class="editor-tab">
+  <div class="editor-toolbar">
+    <div class="editor-file">
+      <span class="file-icon" [class.dirty]="dirty">
+        <i class="fas fa-file-code"></i>
+      </span>
+      <span *ngIf="dirty" class="dirty-indicator" title="Unsaved changes"></span>
+      <span class="file-name" [title]="fileName">{{ fileName }}</span>
+    </div>
+    <div class="editor-actions">
+      <button class="btn btn-sm btn-secondary" [disabled]="saving || loading" (click)="close()">
+        <i
+          class="fas"
+          [class.fa-times]="!saving"
+          [class.fa-spinner]="saving"
+          [class.fa-spin]="saving"
+        ></i>
+        <span>Close</span>
+      </button>
+      <button
+        class="btn btn-sm btn-success"
+        [disabled]="saving || loading"
+        (click)="saveAndClose()"
+      >
+        <i
+          class="fas"
+          [class.fa-check]="!saving"
+          [class.fa-spinner]="saving"
+          [class.fa-spin]="saving"
+        ></i>
+        <span>Save &amp; close</span>
+      </button>
+      <button
+        class="btn btn-sm btn-primary save-button"
+        [disabled]="saving || loading"
+        (click)="save()"
+      >
+        <i
+          class="fas"
+          [class.fa-save]="!saving"
+          [class.fa-spinner]="saving"
+          [class.fa-spin]="saving"
+        ></i>
+        <span>{{ saving ? 'Saving' : 'Save' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="editor-state">
+    <span class="state-icon"><i class="fas fa-spinner fa-spin"></i></span>
+    <span>Loading file...</span>
+  </div>
+  <div *ngIf="loadError" class="editor-state error-state">
+    <span class="state-icon"><i class="fas fa-exclamation-triangle"></i></span>
+    <span>{{ loadError }}</span>
+  </div>
+  <div #editorHost class="editor-host" [hidden]="loading || loadError"></div>
+</div>

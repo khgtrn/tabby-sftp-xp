@@ -1,0 +1,62 @@
+<div class="modal-header">
+  <div class="dialog-title">
+    <span class="dialog-icon"><i class="fas fa-star"></i></span>
+    <div>
+      <h5 class="modal-title">Bookmarks</h5>
+      <div class="dialog-subtitle">Quick access to frequently used paths.</div>
+    </div>
+  </div>
+  <button class="btn btn-sm btn-outline-primary add-button" (click)="startAdd()">
+    <i class="fas fa-plus"></i>
+    <span>Add</span>
+  </button>
+  <button class="dialog-close" type="button" title="Close" (click)="modal.dismiss()">
+    <i class="fas fa-times"></i>
+  </button>
+</div>
+
+<div class="modal-body">
+  <div *ngIf="editingId" class="edit-card">
+    <label>
+      <span>Bookmark name</span>
+      <input type="text" class="form-control" placeholder="Name" [(ngModel)]="editName" />
+    </label>
+    <label>
+      <span>Path</span>
+      <input type="text" class="form-control" placeholder="Path" [(ngModel)]="editPath" />
+    </label>
+    <div class="edit-actions">
+      <button class="btn btn-sm btn-primary" (click)="save()">Save</button>
+      <button class="btn btn-sm btn-secondary" (click)="cancelEdit()">Cancel</button>
+    </div>
+  </div>
+
+  <div *ngIf="!bookmarks.length" class="empty-state">
+    <i class="far fa-star"></i>
+    <span>No bookmarks yet.</span>
+  </div>
+
+  <div class="bookmark-list" *ngIf="bookmarks.length">
+    <div class="bookmark-item" *ngFor="let bookmark of bookmarks">
+      <button class="bookmark-info" type="button" (click)="select(bookmark)">
+        <span class="bookmark-symbol"><i class="fas fa-folder"></i></span>
+        <span class="bookmark-content">
+          <span class="bookmark-name">{{ bookmark.name }}</span>
+          <span class="bookmark-path">{{ bookmark.path }}</span>
+        </span>
+      </button>
+      <div class="bookmark-actions">
+        <button class="icon-button" title="Edit" (click)="startEdit(bookmark)">
+          <i class="fas fa-pen"></i>
+        </button>
+        <button class="icon-button danger" title="Delete" (click)="remove(bookmark)">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-footer">
+  <button class="btn btn-secondary" (click)="modal.dismiss()">Close</button>
+</div>

@@ -1,0 +1,21 @@
+services:
+  tabby_sftp_xp:
+    container_name: tabby_sftp_xp
+    image: tabby_sftp_xp
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - 4200:4200
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - pnpm_store:/root/.local/share/pnpm/store
+    working_dir: /app
+    stdin_open: true
+    tty: true
+
+volumes:
+  node_modules:
+  pnpm_store:

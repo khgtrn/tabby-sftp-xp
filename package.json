@@ -1,0 +1,78 @@
+{
+  "name": "tabby-sftp-xp",
+  "version": "0.0.1",
+  "description": "SFTP plugin for Tabby",
+  "keywords": [
+    "tabby-plugin",
+    "tabby",
+    "sftp"
+  ],
+  "license": "MIT",
+  "author": "Trần Quang Khương",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/khgtrn/tabby-sftp-xp.git"
+  },
+  "homepage": "https://github.com/khgtrn/tabby-sftp-xp",
+  "main": "dist/index.js",
+  "typings": "dist/public-api.d.ts",
+  "files": [
+    "dist"
+  ],
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "build": "pnpm run build:bundle && pnpm run build:types",
+    "build:bundle": "rspack build",
+    "build:types": "tsc -p tsconfig.types.json",
+    "watch": "rspack build --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@angular/animations": "^15",
+    "@angular/cdk": "^15",
+    "@angular/common": "^15",
+    "@angular/core": "^15",
+    "@angular/forms": "^15",
+    "@angular/platform-browser": "^15",
+    "@ng-bootstrap/ng-bootstrap": "^14",
+    "rxjs": "^7",
+    "tabby-core": "*",
+    "tabby-settings": "*",
+    "tabby-ssh": "*",
+    "tabby-terminal": "*"
+  },
+  "devDependencies": {
+    "@angular/animations": "^15.2.6",
+    "@angular/cdk": "^15.2.6",
+    "@angular/common": "^15.2.6",
+    "@angular/compiler": "^15.2.6",
+    "@angular/compiler-cli": "^15.2.6",
+    "@angular/core": "^15.2.6",
+    "@angular/forms": "^15.2.6",
+    "@angular/localize": "^15.2.9",
+    "@angular/platform-browser": "^15.2.6",
+    "@angular/platform-browser-dynamic": "^15.2.6",
+    "@ng-bootstrap/ng-bootstrap": "^14.2.0",
+    "@rspack/cli": "^1.2.8",
+    "@rspack/core": "^1.2.8",
+    "@types/node": "^26.1.0",
+    "@types/ssh2": "^1.15.1",
+    "autoprefixer": "^10.5.2",
+    "css-loader": "^7.1.2",
+    "monaco-editor": "0.55.1",
+    "postcss": "^8.5.16",
+    "rxjs": "^7.8.2",
+    "sass": "^1.85.0",
+    "sass-loader": "^16.0.4",
+    "ssh2": "^1.15.0",
+    "style-loader": "^4.0.0",
+    "tabby-core": "^1.0.231-nightly.0",
+    "tabby-settings": "^1.0.231-nightly.0",
+    "tabby-ssh": "^1.0.231-nightly.0",
+    "tabby-terminal": "^1.0.231-nightly.0",
+    "tailwindcss": "3.4.17",
+    "typescript": "^6.0.3"
+  }
+}

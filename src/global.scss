@@ -1,0 +1,221 @@
+/* Central design tokens. Settings can switch the complete palette by changing one attribute. */
+:root,
+:root[data-sftp-xp-theme='light'] {
+  --sftp-bg: #f3f4f7;
+  --sftp-surface: #fafafa;
+  --sftp-surface-raised: #ffffff;
+  --sftp-surface-hover: #eceef4;
+  --sftp-surface-active: #e1e6f3;
+  --sftp-text: #4b5162;
+  --sftp-text-strong: #292e3b;
+  --sftp-text-muted: #747b8e;
+  --sftp-border: #d5d9e3;
+  --sftp-border-subtle: #e4e6ec;
+  --sftp-divider-faint: rgba(41, 46, 59, 0.07);
+  --sftp-accent: #526fba;
+  --sftp-accent-hover: #435fa7;
+  --sftp-accent-soft: #e4e9f7;
+  --sftp-danger: #c75062;
+  --sftp-warning: #ad751d;
+  --sftp-success: #3c846c;
+  --sftp-danger-soft: rgba(199, 80, 98, 0.1);
+  --sftp-shadow: 0 7px 22px rgba(39, 46, 66, 0.07);
+  --sftp-control-shadow: 0 0 0 3px rgba(82, 111, 186, 0.15);
+  --sftp-radius-sm: 7px;
+  --sftp-radius-md: 10px;
+  --sftp-radius-lg: 13px;
+  --sftp-radius-xl: 16px;
+}
+
+:root[data-sftp-xp-theme='dark'] {
+  --sftp-bg: #1f2335;
+  --sftp-surface: #252a3d;
+  --sftp-surface-raised: #2b3046;
+  --sftp-surface-hover: #30364d;
+  --sftp-surface-active: #39415e;
+  --sftp-text: #c4c9da;
+  --sftp-text-strong: #dce0eb;
+  --sftp-text-muted: #969db4;
+  --sftp-border: #3c435d;
+  --sftp-border-subtle: #33394f;
+  --sftp-divider-faint: rgba(220, 224, 235, 0.07);
+  --sftp-accent: #82aaff;
+  --sftp-accent-hover: #9ab8ff;
+  --sftp-accent-soft: rgba(130, 170, 255, 0.14);
+  --sftp-danger: #f28799;
+  --sftp-warning: #e5b76b;
+  --sftp-success: #78c7a8;
+  --sftp-danger-soft: rgba(242, 135, 153, 0.12);
+  --sftp-shadow: 0 8px 24px rgba(10, 12, 22, 0.18);
+  --sftp-control-shadow: 0 0 0 3px rgba(130, 170, 255, 0.18);
+}
+
+/* Bootstrap refinements are scoped to this plugin's Angular roots. */
+:where(
+  sftp-xp-explorer-tab,
+  sftp-xp-editor-tab,
+  sftp-xp-settings-tab,
+  sftp-xp-bookmark-manager,
+  sftp-xp-prompt-dialog,
+  sftp-xp-connect-dialog,
+  sftp-xp-permission-dialog,
+  sftp-xp-properties-dialog
+) {
+  color: var(--sftp-text);
+
+  .btn {
+    border-radius: var(--sftp-radius-sm);
+    font-weight: 600;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease,
+      opacity 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+  }
+
+  .btn:not(:disabled):active {
+    transform: translateY(1px);
+  }
+
+  .btn-primary {
+    color: #f5f7ff;
+    border-color: var(--sftp-accent);
+    background: var(--sftp-accent);
+  }
+
+  .btn-primary:hover {
+    border-color: var(--sftp-accent-hover);
+    background: var(--sftp-accent-hover);
+  }
+
+  .btn-secondary,
+  .btn-outline-secondary {
+    color: var(--sftp-text);
+    border-color: var(--sftp-border);
+    background: var(--sftp-surface-raised);
+  }
+
+  .btn-secondary:hover,
+  .btn-outline-secondary:hover {
+    color: var(--sftp-text-strong);
+    border-color: var(--sftp-border);
+    background: var(--sftp-surface-hover);
+  }
+
+  .btn-outline-primary {
+    color: var(--sftp-accent);
+    border-color: var(--sftp-accent);
+  }
+
+  .btn-outline-primary:hover {
+    color: #f5f7ff;
+    background: var(--sftp-accent);
+  }
+
+  .btn-link {
+    color: var(--sftp-accent);
+  }
+
+  .text-muted {
+    color: var(--sftp-text-muted) !important;
+  }
+
+  .text-danger {
+    color: var(--sftp-danger) !important;
+  }
+
+  .form-control,
+  .form-select {
+    min-height: 38px;
+    color: var(--sftp-text-strong);
+    border-color: var(--sftp-border);
+    border-radius: var(--sftp-radius-md);
+    background-color: var(--sftp-surface-raised);
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .form-control-sm,
+  .form-select-sm {
+    min-height: 32px;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    color: var(--sftp-text-strong);
+    border-color: var(--sftp-accent);
+    background-color: var(--sftp-surface-raised);
+    box-shadow: var(--sftp-control-shadow);
+  }
+
+  .form-control::placeholder {
+    color: var(--sftp-text-muted);
+    opacity: 0.72;
+  }
+
+  .input-group > :not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .input-group > :not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .modal-header,
+  .modal-footer {
+    border-color: var(--sftp-border-subtle);
+  }
+
+  .modal-title,
+  label,
+  th {
+    color: var(--sftp-text-strong);
+  }
+
+  .table {
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--sftp-border-subtle);
+    --bs-table-color: var(--sftp-text);
+  }
+}
+
+/* ng-bootstrap owns the modal shell, so scope its surface through its direct plugin child. */
+.modal-content:has(
+  > :is(
+    sftp-xp-bookmark-manager,
+    sftp-xp-prompt-dialog,
+    sftp-xp-connect-dialog,
+    sftp-xp-permission-dialog,
+    sftp-xp-properties-dialog
+  )
+) {
+  overflow: hidden;
+  color: var(--sftp-text);
+  border: 1px solid var(--sftp-border);
+  border-radius: var(--sftp-radius-xl);
+  background: var(--sftp-surface);
+  box-shadow: var(--sftp-shadow);
+}
+
+.sftp-xp-toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--sftp-radius-sm) !important;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.sftp-xp-toolbar-button:hover {
+  color: var(--sftp-accent) !important;
+  background: var(--sftp-accent-soft) !important;
+}

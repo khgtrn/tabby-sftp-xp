@@ -1,0 +1,35 @@
+<div class="explorer-tab">
+  <div class="panel-container">
+    <sftp-xp-file-panel class="panel" [fs]="localFs" side="local"></sftp-xp-file-panel>
+
+    <div class="panel remote-panel">
+      <div *ngIf="connecting" class="connection-state">
+        <span class="connection-icon"><i class="fas fa-spinner fa-spin"></i></span>
+        <div>
+          <strong>Connecting</strong>
+          <span>Starting the SFTP session...</span>
+        </div>
+      </div>
+      <div *ngIf="connectError as err" class="connection-state connection-error">
+        <span class="connection-icon"><i class="fas fa-unlink"></i></span>
+        <div class="connection-message">
+          <strong>Connection failed</strong>
+          <span>{{ err }}</span>
+          <button
+            *ngIf="connectionOptions"
+            class="btn btn-sm btn-primary"
+            (click)="connect(connectionOptions)"
+          >
+            <i class="fas fa-redo"></i> Retry
+          </button>
+        </div>
+      </div>
+      <sftp-xp-file-panel
+        *ngIf="remoteFs"
+        class="panel"
+        [fs]="remoteFs"
+        side="remote"
+      ></sftp-xp-file-panel>
+    </div>
+  </div>
+</div>
