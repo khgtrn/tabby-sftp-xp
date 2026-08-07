@@ -19,4 +19,3 @@ export declare class ExplorerTabComponent extends BaseTabComponent implements On
     canClose(): Promise<boolean>;
     ngOnDestroy(): void;
 }
-//# sourceMappingURL=explorer-tab.component.d.ts.map

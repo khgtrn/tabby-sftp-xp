@@ -18,4 +18,3 @@ export declare class SftpXpConfigProvider extends ConfigProvider {
         };
     };
 }
-//# sourceMappingURL=config.provider.d.ts.map

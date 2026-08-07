@@ -39,4 +39,3 @@ export declare class PropertiesDialogComponent {
     constructor(modal: NgbActiveModal);
     get octal(): string;
 }
-//# sourceMappingURL=dialogs.component.d.ts.map

@@ -29,4 +29,3 @@ export declare class EditorTabComponent extends BaseTabComponent implements OnIn
     canClose(): Promise<boolean>;
     ngOnDestroy(): void;
 }
-//# sourceMappingURL=editor-tab.component.d.ts.map

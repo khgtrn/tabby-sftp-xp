@@ -14,4 +14,3 @@ export declare class SftpXpThemeService implements OnDestroy {
     applyConfiguredTheme(): void;
     ngOnDestroy(): void;
 }
-//# sourceMappingURL=theme.service.d.ts.map

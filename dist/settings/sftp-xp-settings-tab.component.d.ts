@@ -14,4 +14,3 @@ export declare class SftpXpSettingsTabComponent implements OnDestroy {
     changeTheme(theme: SftpXpTheme): void;
     ngOnDestroy(): void;
 }
-//# sourceMappingURL=sftp-xp-settings-tab.component.d.ts.map

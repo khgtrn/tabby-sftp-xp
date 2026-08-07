@@ -13,4 +13,3 @@ export declare class EditorCacheService {
     writeLocal(localPath: string, content: string): Promise<void>;
     cleanupSession(sessionTag: string): Promise<void>;
 }
-//# sourceMappingURL=editor-cache.service.d.ts.map

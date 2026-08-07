@@ -12,4 +12,3 @@ export declare class ClipboardService {
     get(): ClipboardEntry | null;
     clear(): void;
 }
-//# sourceMappingURL=clipboard.service.d.ts.map

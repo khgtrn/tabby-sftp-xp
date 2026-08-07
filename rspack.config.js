@@ -1,12 +1,14 @@
 const path = require('path');
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 /** @type {import('@rspack/cli').Configuration} */
 module.exports = {
   target: 'node',
   entry: './src/index.ts',
   context: __dirname,
-  mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-  devtool: 'source-map',
+  mode: isProduction ? 'production' : 'development',
+  devtool: isProduction ? false : 'source-map',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'index.js',

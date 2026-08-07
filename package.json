@@ -1,6 +1,6 @@
 {
   "name": "tabby-sftp-xp",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "SFTP plugin for Tabby",
   "keywords": [
     "tabby-plugin",
@@ -15,15 +15,18 @@
   },
   "homepage": "https://github.com/khgtrn/tabby-sftp-xp",
   "main": "dist/index.js",
-  "typings": "dist/public-api.d.ts",
+  "typings": "dist/index.d.ts",
   "files": [
     "dist"
   ],
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "build": "pnpm run build:bundle && pnpm run build:types",
+    "build": "pnpm run build:prod",
+    "build:prod": "pnpm run clean && NODE_ENV=production pnpm run build:bundle && pnpm run build:types",
+    "build:test": "pnpm run clean && NODE_ENV=development pnpm run build:bundle && pnpm run build:types:test",
     "build:bundle": "rspack build",
     "build:types": "tsc -p tsconfig.types.json",
+    "build:types:test": "tsc -p tsconfig.types.json --declarationMap true",
     "watch": "rspack build --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"

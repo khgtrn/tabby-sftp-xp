@@ -49,4 +49,3 @@ export declare class TabbySftpFileSystem implements IFileSystem {
     basename(path: string): string;
 }
 export {};
-//# sourceMappingURL=tabby-sftp-filesystem.d.ts.map

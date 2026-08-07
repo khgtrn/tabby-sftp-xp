@@ -6,4 +6,3 @@ export declare class SftpXpSettingsTabProvider extends SettingsTabProvider {
     title: string;
     getComponentType(): any;
 }
-//# sourceMappingURL=settings-tab.provider.d.ts.map

@@ -16,16 +16,19 @@ và [docs/Function.md](docs/Function.md).
 docker compose up -d --build
 
 # Cài / cập nhật dependencies (chạy bên trong container)
-docker compose exec tabby_sftp_xp npm install
+docker compose exec tabby_sftp_xp pnpm install
 
 # Type-check
-docker compose exec tabby_sftp_xp npm run typecheck
+docker compose exec tabby_sftp_xp pnpm run typecheck
 
-# Build plugin (rspack) -> ./dist/index.js
-docker compose exec tabby_sftp_xp npm run build
+# Build production, không tạo source map -> ./dist/index.js
+docker compose exec tabby_sftp_xp pnpm run build:prod
+
+# Build test/debug, có tạo source map
+docker compose exec tabby_sftp_xp pnpm run build:test
 
 # Build & rebuild liên tục khi sửa code
-docker compose exec tabby_sftp_xp npm run watch
+docker compose exec tabby_sftp_xp pnpm run watch
 
 # Dừng container
 docker compose down

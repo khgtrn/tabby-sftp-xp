@@ -6,4 +6,3 @@ export declare const getBookmarksFile: () => string;
 export declare const getTempDir: () => string;
 /** Default local folder used to store downloaded files */
 export declare const getDownloadDir: () => string;
-//# sourceMappingURL=paths.d.ts.map

@@ -66,4 +66,3 @@ export declare class FilePanelComponent implements OnInit {
     /** Only used by the remote panel when it needs to (re)connect. */
     promptConnect(): Promise<Record<string, any> | null>;
 }
-//# sourceMappingURL=file-panel.component.d.ts.map

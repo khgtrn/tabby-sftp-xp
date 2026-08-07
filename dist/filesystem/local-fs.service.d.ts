@@ -20,4 +20,3 @@ export declare class LocalFsService implements IFileSystem {
     dirname(p: string): string;
     basename(p: string): string;
 }
-//# sourceMappingURL=local-fs.service.d.ts.map

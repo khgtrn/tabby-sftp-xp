@@ -8,4 +8,3 @@ export declare class TransferService {
     copy(source: IFileSystem, sourcePath: string, dest: IFileSystem, destDir: string): Promise<void>;
     move(source: IFileSystem, sourcePath: string, dest: IFileSystem, destDir: string): Promise<void>;
 }
-//# sourceMappingURL=transfer.service.d.ts.map

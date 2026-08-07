@@ -9,4 +9,3 @@ export declare class BookmarkService {
     update(id: string, changes: Partial<Pick<Bookmark, 'name' | 'path' | 'side'>>): Promise<void>;
     remove(id: string): Promise<void>;
 }
-//# sourceMappingURL=bookmark.service.d.ts.map

@@ -62,4 +62,3 @@ export interface PosixPermissions {
 export declare function modeToPermissions(mode: number): PosixPermissions;
 export declare function permissionsToMode(p: PosixPermissions): number;
 export declare function modeToOctalString(mode: number): string;
-//# sourceMappingURL=models.d.ts.map

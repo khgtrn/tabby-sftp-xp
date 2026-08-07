@@ -31,4 +31,3 @@ export declare class SftpConnectionManager {
     connect(options: SftpConnectionOptions): Promise<SftpConnection>;
     disconnect(connection: SftpConnection): void;
 }
-//# sourceMappingURL=sftp.service.d.ts.map

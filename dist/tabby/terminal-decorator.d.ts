@@ -9,4 +9,3 @@ export declare class SftpXpTerminalDecorator extends TerminalDecorator {
     attach(terminal: BaseTerminalTabComponent<any>): void;
     detach(terminal: BaseTerminalTabComponent<any>): void;
 }
-//# sourceMappingURL=terminal-decorator.d.ts.map

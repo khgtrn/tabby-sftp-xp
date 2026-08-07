@@ -24,4 +24,3 @@ export declare class BookmarkManagerComponent implements OnInit {
     save(): Promise<void>;
     remove(bookmark: Bookmark): Promise<void>;
 }
-//# sourceMappingURL=bookmark-manager.component.d.ts.map
