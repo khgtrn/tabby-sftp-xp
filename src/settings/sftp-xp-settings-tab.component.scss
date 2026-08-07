@@ -6,7 +6,8 @@
 
 .settings-tab {
   width: min(100%, 860px);
-  padding: clamp(16px, 3vw, 32px);
+  padding-left: clamp(16px, 3vw, 20px);
+  padding-right: clamp(16px, 3vw, 20px);
 }
 
 .settings-heading {
@@ -173,7 +174,7 @@
 
 @media (max-width: 680px) {
   .settings-tab {
-    padding: 12px 8px;
+    padding: 0 8px;
   }
 
   .settings-card {

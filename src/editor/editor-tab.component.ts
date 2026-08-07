@@ -12,6 +12,7 @@ import { Subscription } from 'rxjs';
 import { AppService, BaseTabComponent, NotificationsService, PlatformService } from 'tabby-core';
 import { getErrorMessage } from '../core/errors';
 import { IFileSystem } from '../filesystem/models';
+import { TabbySftpFileSystem } from '../sftp/tabby-sftp-filesystem';
 import { SftpXpThemeService } from '../theme/theme.service';
 import { EditorCacheService } from './editor-cache.service';
 import template from './editor-tab.component.html';
@@ -73,11 +74,13 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
   saving = false;
   loading = true;
   loadError: string | null = null;
+  connectionLostMessage: string | null = null;
 
   #editor: any = null;
   #localPath!: string;
   #sessionTag = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   #themeSubscription = new Subscription();
+  #connectionSubscription = new Subscription();
   #monaco: any = null;
   #cleanupPromise: Promise<void> | null = null;
 
@@ -97,6 +100,11 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
   async ngOnInit(): Promise<void> {
     this.setTitle(this.fileName);
     this.icon = 'fas fa-file-code';
+    if (this.fs instanceof TabbySftpFileSystem) {
+      this.#connectionSubscription.add(
+        this.fs.disconnected$.subscribe((reason) => this.#handleDisconnect(reason)),
+      );
+    }
     try {
       let content: string;
       if (this.fs.kind === 'local') {
@@ -175,6 +183,12 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
     try {
       const content = this.#editor.getValue();
       await this.editorCache.writeLocal(this.#localPath, content);
+      if (this.fs instanceof TabbySftpFileSystem && !this.fs.connected) {
+        this.notifications.error(
+          `Cannot upload ${this.fileName}: the parent SSH connection is disconnected. Changes remain in this editor.`,
+        );
+        return false;
+      }
       if (this.fs.kind === 'remote') {
         await this.editorCache.upload(this.fs, this.#localPath, this.filePath);
       }
@@ -197,6 +211,18 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
       return false;
     } finally {
       this.saving = false;
+    }
+  }
+
+  #handleDisconnect(reason: string): void {
+    this.connectionLostMessage = reason;
+    this.setTitle(`${this.fileName} (disconnected)`);
+    this.changeDetector.detectChanges();
+
+    if (this.#editor && this.#localPath) {
+      void this.editorCache.writeLocal(this.#localPath, this.#editor.getValue()).catch((error) => {
+        this.notifications.error(`Could not preserve the local editor cache: ${getErrorMessage(error)}`);
+      });
     }
   }
 
@@ -246,6 +272,7 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
 
   ngOnDestroy(): void {
     this.#themeSubscription.unsubscribe();
+    this.#connectionSubscription.unsubscribe();
     this.#editor?.dispose();
     if (this.fs?.kind === 'remote') {
       void this.#cleanupBeforeClose();

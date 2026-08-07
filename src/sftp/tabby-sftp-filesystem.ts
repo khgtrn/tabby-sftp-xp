@@ -1,4 +1,5 @@
 import { Readable, Writable } from 'stream';
+import { ReplaySubject } from 'rxjs';
 import type { FileEntry, IFileSystem } from '../filesystem/models';
 
 /** Minimal subset of Tabby's SFTP API used by this adapter. */
@@ -39,11 +40,27 @@ type SFTPFileHandle = Awaited<ReturnType<TabbySftpSession['open']>>;
 /** Adapts Tabby's already-authenticated SFTP session to SFTP-XP's filesystem API. */
 export class TabbySftpFileSystem implements IFileSystem {
   readonly kind = 'remote' as const;
+  readonly disconnected$ = new ReplaySubject<string>(1);
+
+  #connected = true;
 
   constructor(
     private readonly session: TabbySftpSession,
     private readonly homePath: string,
   ) {}
+
+  get connected(): boolean {
+    return this.#connected;
+  }
+
+  markDisconnected(reason: string): void {
+    if (!this.#connected) {
+      return;
+    }
+    this.#connected = false;
+    this.disconnected$.next(reason);
+    this.disconnected$.complete();
+  }
 
   async home(): Promise<string> {
     return this.homePath;

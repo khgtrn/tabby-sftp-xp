@@ -1,81 +1,48 @@
-# tabby-sftp-xp
+# Tabby SFTP XP
 
-Plugin cho [Tabby](https://tabby.sh) cho phép quản lý và edit file local + remote (qua SFTP)
-trực tiếp trong Tabby, không cần ứng dụng ngoài. Xem chi tiết trong [docs/Main.md](docs/Main.md)
-và [docs/Function.md](docs/Function.md).
+Manage local and remote files over SFTP, and edit remote files directly inside [Tabby](https://tabby.sh).
 
-## Yêu cầu
+## Usage
 
-- Docker + Docker Compose. **Không cần cài Node.js/npm trên máy host** — mọi lệnh node/npm
-  đều chạy bên trong container (xem [docs/Docker.md](docs/Docker.md)).
+1. Open an SSH profile in Tabby and wait for the connection to be established.
+2. Click **SFTP-XP** in the SSH tab toolbar. A new explorer tab opens using the current SSH connection.
+3. Use the left pane for local files and the right pane for files on the remote server.
 
-## Bắt đầu
+### Browse files
 
-```bash
-# Build & start dev container (giữ container chạy nền bằng `tail -f /dev/null`)
-docker compose up -d --build
+- Double-click a folder to open it.
+- Click the current path to enter another path, then press <kbd>Enter</kbd>.
+- Use the toolbar to go back, forward, up one level, return home, refresh the directory, filter entries, or manage bookmarks.
+- Right-click a file, folder, or empty area to see the available actions.
 
-# Cài / cập nhật dependencies (chạy bên trong container)
-docker compose exec tabby_sftp_xp pnpm install
+### Manage and transfer files
 
-# Type-check
-docker compose exec tabby_sftp_xp pnpm run typecheck
+- Create, rename, delete, copy, and cut files or folders from the context menu.
+- Copy or cut an item in either pane, then paste it into a local or remote directory.
+- View file properties, edit POSIX permissions, or copy an item's full path from its context menu.
 
-# Build production, không tạo source map -> ./dist/index.js
-docker compose exec tabby_sftp_xp pnpm run build:prod
+You can also use <kbd>Ctrl</kbd> + <kbd>C</kbd>, <kbd>Ctrl</kbd> + <kbd>X</kbd>, <kbd>Ctrl</kbd> + <kbd>V</kbd>, and <kbd>Delete</kbd> after selecting an item.
 
-# Build test/debug, có tạo source map
-docker compose exec tabby_sftp_xp pnpm run build:test
+### Edit a remote file
 
-# Build & rebuild liên tục khi sửa code
-docker compose exec tabby_sftp_xp pnpm run watch
+1. Double-click a remote file, or right-click it and select **Edit**.
+2. Make your changes in the built-in editor.
+3. Click **Save**, **Save & close**, or press <kbd>Ctrl</kbd> + <kbd>S</kbd> to upload the changes to the server.
 
-# Dừng container
-docker compose down
-```
+### Customize the plugin
 
-Sau khi build, copy (hoặc symlink) thư mục dự án vào thư mục plugin của Tabby, hoặc chạy Tabby
-với biến môi trường `TABBY_PLUGINS=/path/to/tabby-sftp-xp` để load plugin trong lúc phát triển.
+Open **Settings → SFTP Explorer** in Tabby to configure the theme, icon style, download and temporary folders, cache and file-size limits, automatic uploads, delete confirmations, and hidden files.
 
-### Chạy Tabby portable trên Windows từ WSL
+## Preview
 
-Không tạo `mklink` bên trong `data\plugins\node_modules`: thư mục này do Plugin Manager quản lý
-và link không có trong lockfile có thể bị xoá. Sau khi đóng hẳn Tabby, chạy
-`start-tabby-dev.cmd`; script đặt `TABBY_PLUGINS` trỏ thẳng tới project WSL rồi mở Tabby ở chế
-độ debug.
+### SFTP Explorer
 
-Mở PowerShell trên Windows và chạy:
+![SFTP Explorer](./docs/explorer.png)
 
-```powershell
-& "\\wsl.localhost\Ubuntu-26.04\root\github\tabby-sftp-xp\start-tabby-dev.cmd"
-```
+### File editor
 
-Script hiện sử dụng project trong WSL tại đường dẫn trên và khởi động Tabby portable từ
-`D:\Software\tabby-portable-x64\Tabby.exe`. Nếu project, distro WSL hoặc Tabby nằm ở vị trí
-khác, hãy cập nhật các đường dẫn tương ứng trong `start-tabby-dev.cmd` trước khi chạy.
+![Remote file editor](./docs/editor.png)
 
-## Cấu trúc
+### Settings
 
-```
-src/
-  bookmarks/     # Bookmark model + persistence (~/.config/tabby-sftp/bookmarks.json)
-  core/          # Config provider, shared paths
-  editor/        # Download/upload cache cho Monaco Editor
-  filesystem/    # IFileSystem, LocalFsService, TransferService (copy/cut), Clipboard
-  sftp/          # Kết nối SFTP độc lập (ssh2)
-  tabby-plugin/  # Toolbar button + context menu tích hợp vào Tabby
-  ui/            # Angular components: dual-pane explorer, dialogs, settings tab
-  plugin.module.ts, index.ts  # Entry point của plugin (theo chuẩn Tabby)
-```
-
-## Build
-
-Build dùng [rspack](https://rspack.dev) (xem `rspack.config.js`), biên dịch `src/index.ts`
-thành `dist/index.js` (UMD), giữ các dependency của Tabby (`@angular/*`, `tabby-*`,
-`@ng-bootstrap/*`, `rxjs`) là `externals` — do host Tabby app cung cấp, không bundle vào.
-`ssh2` được khai báo trong `dependencies` (không bundle, vì có native addon) nên sẽ được cài
-cùng khi plugin được cài đặt.
-
-## Giấy phép
-
-Dự án được phát hành theo giấy phép [MIT](LICENSE).
+![Settings](./docs/settings.png)

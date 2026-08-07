@@ -1,9 +1,11 @@
-import { Component, Injector, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Injector, OnDestroy, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { BaseTabComponent, NotificationsService } from 'tabby-core';
 import { getErrorMessage } from '../core/errors';
 import { LocalFsService } from '../filesystem/local-fs.service';
 import { IFileSystem, SftpConnectionOptions } from '../filesystem/models';
 import { SftpConnection, SftpConnectionManager } from '../sftp/sftp.service';
+import { TabbySftpFileSystem } from '../sftp/tabby-sftp-filesystem';
 import template from './explorer-tab.component.html';
 import styles from './explorer-tab.component.scss';
 
@@ -20,12 +22,16 @@ export class ExplorerTabComponent extends BaseTabComponent implements OnInit, On
   remoteFs: IFileSystem | null = null;
   connecting = false;
   connectError: string | null = null;
+  disconnectedMessage: string | null = null;
+
+  #connectionSubscription = new Subscription();
 
   constructor(
     injector: Injector,
     public readonly localFs: LocalFsService,
     private readonly connectionManager: SftpConnectionManager,
     private readonly notifications: NotificationsService,
+    private readonly changeDetector: ChangeDetectorRef,
   ) {
     super(injector);
   }
@@ -35,6 +41,16 @@ export class ExplorerTabComponent extends BaseTabComponent implements OnInit, On
     this.setTitle('SFTP Explorer');
     if (this.remoteFs) {
       this.setTitle('SFTP-XP');
+      if (this.remoteFs instanceof TabbySftpFileSystem) {
+        this.#connectionSubscription.add(
+          this.remoteFs.disconnected$.subscribe((reason) => {
+            this.remoteFs = null;
+            this.disconnectedMessage = reason;
+            this.setTitle('SFTP-XP (disconnected)');
+            this.changeDetector.detectChanges();
+          }),
+        );
+      }
     } else if (this.connectionOptions) {
       await this.connect(this.connectionOptions);
     }
@@ -60,6 +76,7 @@ export class ExplorerTabComponent extends BaseTabComponent implements OnInit, On
   }
 
   ngOnDestroy(): void {
+    this.#connectionSubscription.unsubscribe();
     if (this.remoteFs instanceof SftpConnection) {
       this.connectionManager.disconnect(this.remoteFs);
     }

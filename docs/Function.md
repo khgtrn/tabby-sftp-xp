@@ -1,11 +1,11 @@
-## Thanh điều hướng
-Mỗi panel:
+## Navigation bar
+Each panel contains:
 ← → ↑ ⟳ 🏠 ★
 [path textbox]
 [filter]
 
-## Chức năng textbox
-Ví dụ:
+## Path textbox
+Example:
 /var/www/html
 goToPath('/var/www/html')
 
@@ -18,7 +18,7 @@ Upload
 [Edit]
 [Delete]
 
-Lưu json:
+Stored as JSON:
 {
   "id": "...",
   "name": "Production",
@@ -75,7 +75,7 @@ Copy Path
         Write
         Execute
 
-- Hiển thị:
+- Display:
 755
 644
 777
@@ -99,8 +99,8 @@ remote -> local
 
 ### Editor (Monaco Editor)
 
-#### Cơ chế edit file
-- Không edit trực tiếp trên SFTP. Thay vào đó:
+#### File editing mechanism
+- Files are not edited directly over SFTP. Instead:
 Remote file
 ↓
 download
@@ -111,7 +111,7 @@ Monaco
 ↓
 save
 ↓
-upload lại
+upload
 
 - Workflow:
 open file
@@ -129,7 +129,7 @@ upload
 done
 
 ### Cache
-Ví dụ:
+Example:
 ~/.config/tabby-sftp/
 cache/
 bookmarks.json
@@ -137,18 +137,18 @@ settings.json
 temp/
 
 ### Auto Upload
-Ctrl + S thực hiện upload()
-Nếu lỗi: Failed to upload file
+Ctrl + S runs upload().
+On error: Failed to upload file
 Retry
 Discard
 Keep local
 
 ### File Watching
-nếu temp file đổi modified đánh dấu unsaved
+If the temporary file is modified, mark it as unsaved.
 
 ### Settings Tab
-Trong Settings của Tabby: SFTP Explorer
-Các mục:
+In Tabby Settings: SFTP Explorer
+Options:
 - Theme
 - Icon Style
 - Default Download Folder
@@ -159,7 +159,7 @@ Các mục:
 - Confirm Delete
 - Show Hidden Files
 
-### Các service chính
+### Main services
 - SftpService
 - LocalFsService
 - BookmarkService

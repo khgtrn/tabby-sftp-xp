@@ -1,9 +1,9 @@
-Cấu hình Dockerfile để sử dụng node 24 và cài đặt các gói cần thiết cho dự án như: rspack...
+Configure the Dockerfile to use Node.js 24 and install the packages required by the project, such as Rspack.
 
-Dockerfile chạy một CMD tail -f /dev/null để giữ container chạy trong khi phát triển.
+The Dockerfile runs `CMD tail -f /dev/null` to keep the container running during development.
 
-Sử dụng multi-stage build để giảm kích thước của image cuối cùng.
+Use a multi-stage build to reduce the size of the final image.
 
-Cấu hình docker-compose.yaml để dễ dàng quản lý các dịch vụ và môi trường phát triển.
+Configure `docker-compose.yaml` to make the services and development environment easier to manage.
 
-Không dùng npm bên ngoài, tất cả các lệnh node đều chạy bên trong container.
+Do not use npm on the host. Run all Node.js commands inside the container.

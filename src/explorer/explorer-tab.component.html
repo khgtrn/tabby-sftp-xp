@@ -24,6 +24,13 @@
           </button>
         </div>
       </div>
+      <div *ngIf="disconnectedMessage as reason" class="connection-state connection-error">
+        <span class="connection-icon"><i class="fas fa-unlink"></i></span>
+        <div class="connection-message">
+          <strong>SSH connection lost</strong>
+          <span>{{ reason }} Remote files are no longer available.</span>
+        </div>
+      </div>
       <sftp-xp-file-panel
         *ngIf="remoteFs"
         class="panel"

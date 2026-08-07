@@ -20,6 +20,7 @@ export declare class EditorTabComponent extends BaseTabComponent implements OnIn
     saving: boolean;
     loading: boolean;
     loadError: string | null;
+    connectionLostMessage: string | null;
     constructor(injector: Injector, app: AppService, editorCache: EditorCacheService, notifications: NotificationsService, platform: PlatformService, changeDetector: ChangeDetectorRef, theme: SftpXpThemeService);
     ngOnInit(): Promise<void>;
     onKeydown(event: KeyboardEvent): void;

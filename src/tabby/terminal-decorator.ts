@@ -10,17 +10,18 @@ type ActiveSshTab = BaseTerminalTabComponent<any> & {
   sshSession: { open: boolean; openSFTP(): Promise<TabbySftpSession> } | null;
 };
 
+interface DecoratedTerminal {
+  button: HTMLButtonElement;
+  observer: MutationObserver;
+  pollTimer: ReturnType<typeof setInterval>;
+  wasConnected: boolean;
+  remoteFileSystems: Set<TabbySftpFileSystem>;
+}
+
 /** Adds SFTP-XP immediately before Tabby's built-in SFTP button on connected SSH tabs. */
 @Injectable()
 export class SftpXpTerminalDecorator extends TerminalDecorator {
-  #decoratedTerminals = new Map<
-    BaseTerminalTabComponent<any>,
-    {
-      button: HTMLButtonElement;
-      observer: MutationObserver;
-      pollTimer: ReturnType<typeof setInterval>;
-    }
-  >();
+  #decoratedTerminals = new Map<BaseTerminalTabComponent<any>, DecoratedTerminal>();
 
   constructor(
     private readonly app: AppService,
@@ -51,15 +52,26 @@ export class SftpXpTerminalDecorator extends TerminalDecorator {
     // - MutationObserver only runs when the DOM changes.
     // - There are cases where SSH is connected but the DOM hasn't changed yet.
     // - Previous attempts might fail because sshSession or toolbar is not ready.
-    const pollTimer = setInterval((): void => this.#insertButton(terminal, host, button), 500);
+    const pollTimer = setInterval((): void => {
+      this.#detectDisconnect(terminal);
+      this.#insertButton(terminal, host, button);
+    }, 500);
 
-    this.#decoratedTerminals.set(terminal, { button, observer, pollTimer });
+    this.#decoratedTerminals.set(terminal, {
+      button,
+      observer,
+      pollTimer,
+      wasConnected: false,
+      remoteFileSystems: new Set(),
+    });
+    this.#detectDisconnect(terminal);
     this.#insertButton(terminal, host, button);
   }
 
   detach(terminal: BaseTerminalTabComponent<any>): void {
     const decorated = this.#decoratedTerminals.get(terminal);
     if (decorated) {
+      this.#markDisconnected(decorated, 'The parent SSH tab was closed.');
       // Stop observing DOM changes and clear the polling timer.
       decorated.observer.disconnect();
       // Clear the polling timer to stop trying to insert the button.
@@ -136,6 +148,7 @@ export class SftpXpTerminalDecorator extends TerminalDecorator {
       const currentPath = (await tab.session?.getWorkingDirectory()) ?? '/';
       const session = await tab.sshSession.openSFTP();
       const remoteFs = new TabbySftpFileSystem(session, currentPath);
+      this.#decoratedTerminals.get(tab)?.remoteFileSystems.add(remoteFs);
       this.app.openNewTabRaw({
         type: ExplorerTabComponent,
         inputs: { remoteFs },
@@ -143,6 +156,30 @@ export class SftpXpTerminalDecorator extends TerminalDecorator {
     } catch (error) {
       this.notifications.error(`Don't open SFTP-XP: ${getErrorMessage(error)}`);
     }
+  }
+
+  #detectDisconnect(tab: ActiveSshTab): void {
+    const decorated = this.#decoratedTerminals.get(tab);
+    if (!decorated) {
+      return;
+    }
+    const connected = !!tab.sshSession?.open && !!tab.session?.open;
+    if (connected) {
+      decorated.wasConnected = true;
+    } else if (decorated.wasConnected) {
+      this.#markDisconnected(decorated, 'The parent SSH connection was lost.');
+    }
+  }
+
+  #markDisconnected(decorated: DecoratedTerminal, reason: string): void {
+    const connectedFileSystems = [...decorated.remoteFileSystems].filter((fs) => fs.connected);
+    if (!connectedFileSystems.length) {
+      return;
+    }
+    for (const fs of connectedFileSystems) {
+      fs.markDisconnected(reason);
+    }
+    this.notifications.error(`SFTP-XP disconnected: ${reason}`);
   }
 
   /**

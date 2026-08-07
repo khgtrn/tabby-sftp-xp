@@ -46,6 +46,14 @@
     </div>
   </div>
 
+  <div *ngIf="connectionLostMessage" class="connection-warning">
+    <i class="fas fa-unlink"></i>
+    <span>
+      SSH connection lost. Editing remains available, but changes cannot be uploaded until the
+      file is reopened from a connected SSH tab.
+    </span>
+  </div>
+
   <div *ngIf="loading" class="editor-state">
     <span class="state-icon"><i class="fas fa-spinner fa-spin"></i></span>
     <span>Loading file...</span>
