@@ -41,6 +41,16 @@ và link không có trong lockfile có thể bị xoá. Sau khi đóng hẳn Tab
 `start-tabby-dev.cmd`; script đặt `TABBY_PLUGINS` trỏ thẳng tới project WSL rồi mở Tabby ở chế
 độ debug.
 
+Mở PowerShell trên Windows và chạy:
+
+```powershell
+& "\\wsl.localhost\Ubuntu-26.04\root\github\tabby-sftp-xp\start-tabby-dev.cmd"
+```
+
+Script hiện sử dụng project trong WSL tại đường dẫn trên và khởi động Tabby portable từ
+`D:\Software\tabby-portable-x64\Tabby.exe`. Nếu project, distro WSL hoặc Tabby nằm ở vị trí
+khác, hãy cập nhật các đường dẫn tương ứng trong `start-tabby-dev.cmd` trước khi chạy.
+
 ## Cấu trúc
 
 ```
@@ -62,3 +72,7 @@ thành `dist/index.js` (UMD), giữ các dependency của Tabby (`@angular/*`, `
 `@ng-bootstrap/*`, `rxjs`) là `externals` — do host Tabby app cung cấp, không bundle vào.
 `ssh2` được khai báo trong `dependencies` (không bundle, vì có native addon) nên sẽ được cài
 cùng khi plugin được cài đặt.
+
+## Giấy phép
+
+Dự án được phát hành theo giấy phép [MIT](LICENSE).
