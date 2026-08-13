@@ -42,6 +42,44 @@
   </section>
 
   <section class="settings-card">
+    <div class="section-title"><i class="fas fa-code"></i><span>Editor</span></div>
+    <div class="form-line">
+      <div class="header">
+        <label class="title" for="editor-theme">Theme</label>
+        <div class="description">Use the default app theme or a dedicated editor theme.</div>
+      </div>
+      <select id="editor-theme" class="form-select control-medium"
+        [(ngModel)]="config.store.sftpXp.editor.theme" (ngModelChange)="save()">
+        <option *ngFor="let theme of editorThemes" [value]="theme.value">{{ theme.label }}</option>
+      </select>
+    </div>
+    <label class="switch-line">
+      <span><strong>Minimap</strong><small>Show the code overview on the editor edge.</small></span>
+      <input type="checkbox" [(ngModel)]="config.store.sftpXp.editor.minimap"
+        (ngModelChange)="save()" />
+    </label>
+    <div class="form-line">
+      <div class="header"><label class="title" for="editor-font-family">Font family</label></div>
+      <input id="editor-font-family" type="text" class="form-control control-wide"
+        [(ngModel)]="config.store.sftpXp.editor.fontFamily" (ngModelChange)="scheduleSave()" />
+    </div>
+    <div class="form-grid editor-number-grid">
+      <label class="number-field">Font size
+        <input type="number" min="8" max="40" class="form-control"
+          [(ngModel)]="config.store.sftpXp.editor.fontSize" (change)="save()" />
+      </label>
+      <label class="number-field">Line height
+        <input type="number" min="8" max="80" class="form-control"
+          [(ngModel)]="config.store.sftpXp.editor.lineHeight" (change)="save()" />
+      </label>
+      <label class="number-field">Letter spacing
+        <input type="number" min="-2" max="10" step="0.1" class="form-control"
+          [(ngModel)]="config.store.sftpXp.editor.letterSpacing" (change)="save()" />
+      </label>
+    </div>
+  </section>
+
+  <section class="settings-card">
     <div class="section-title"><i class="fas fa-folder-open"></i><span>Folders</span></div>
     <div class="form-line">
       <div class="header">
@@ -105,28 +143,6 @@
         />
       </label>
     </div>
-    <label class="switch-line">
-      <span>
-        <strong>Upload automatically on save</strong>
-        <small>Synchronize remote files after every save.</small>
-      </span>
-      <input
-        type="checkbox"
-        [(ngModel)]="config.store.sftpXp.autoUpload"
-        (ngModelChange)="save()"
-      />
-    </label>
-    <label class="switch-line">
-      <span>
-        <strong>Confirm before deleting</strong>
-        <small>Reduce the risk of deleting a file or folder by accident.</small>
-      </span>
-      <input
-        type="checkbox"
-        [(ngModel)]="config.store.sftpXp.confirmDelete"
-        (ngModelChange)="save()"
-      />
-    </label>
     <label class="switch-line">
       <span>
         <strong>Show hidden files</strong>

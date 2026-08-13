@@ -35,8 +35,17 @@
 .editor-file {
   display: flex;
   min-width: 0;
+  flex: 1;
   align-items: center;
   gap: 9px;
+}
+
+.file-details {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  line-height: 1.2;
 }
 
 .file-icon {
@@ -55,12 +64,24 @@
   }
 }
 
-.file-name {
+.file-name,
+.file-path {
+  display: block;
   overflow: hidden;
-  color: var(--sftp-text-strong);
-  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.file-name {
+  color: var(--sftp-text-strong);
+  font-weight: 600;
+}
+
+.file-path {
+  margin-top: 2px;
+  color: var(--sftp-text-muted);
+  font-size: 0.72rem;
+  font-weight: 400;
 }
 
 .dirty-indicator {

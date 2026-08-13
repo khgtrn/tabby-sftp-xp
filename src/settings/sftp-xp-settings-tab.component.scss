@@ -110,6 +110,10 @@
   border-top: 1px solid var(--sftp-border-subtle);
 }
 
+.editor-number-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .number-field {
   display: grid;
   gap: 8px;

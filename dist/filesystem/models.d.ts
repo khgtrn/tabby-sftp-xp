@@ -62,3 +62,5 @@ export interface PosixPermissions {
 export declare function modeToPermissions(mode: number): PosixPermissions;
 export declare function permissionsToMode(p: PosixPermissions): number;
 export declare function modeToOctalString(mode: number): string;
+/** Formats an entry's type and permission bits like the first column of `ls -l`. */
+export declare function modeToSymbolicString(entry: Pick<FileEntry, 'isDirectory' | 'isSymlink' | 'mode'>): string;

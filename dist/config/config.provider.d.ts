@@ -12,9 +12,15 @@ export declare class SftpXpConfigProvider extends ConfigProvider {
             tempFolder: string;
             maxCacheSizeMB: number;
             openFileSizeLimitMB: number;
-            autoUpload: boolean;
-            confirmDelete: boolean;
             showHiddenFiles: boolean;
+            editor: {
+                theme: string;
+                minimap: boolean;
+                fontFamily: string;
+                fontSize: number;
+                lineHeight: number;
+                letterSpacing: number;
+            };
         };
     };
 }

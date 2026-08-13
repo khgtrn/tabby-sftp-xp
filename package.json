@@ -1,6 +1,6 @@
 {
   "name": "tabby-sftp-xp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "SFTP plugin for Tabby",
   "keywords": [
     "tabby-plugin",

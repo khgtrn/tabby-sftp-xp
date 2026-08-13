@@ -264,7 +264,7 @@ export class PermissionDialogComponent {
           </tr>
           <tr>
             <th>Modified</th>
-            <td>{{ entry.mtime | date: 'medium' }}</td>
+            <td>{{ entry.mtime | date: 'yyyy-MM-dd HH:mm:ss' }}</td>
           </tr>
           <tr>
             <th>Permissions</th>

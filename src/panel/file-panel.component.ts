@@ -18,6 +18,7 @@ import {
 } from '../dialogs/dialogs.component';
 import { EditorTabComponent } from '../editor/editor-tab.component';
 import { ClipboardService } from '../filesystem/clipboard.service';
+import { modeToSymbolicString } from '../filesystem/models';
 import type { FileEntry, IFileSystem } from '../filesystem/models';
 import { TransferService } from '../filesystem/transfer.service';
 import template from './file-panel.component.html';
@@ -152,6 +153,9 @@ export class FilePanelComponent implements OnInit {
     }
     const target = this.editingPath;
     this.editingPath = null;
+    if (target === this.path) {
+      return;
+    }
     await this.#navigate(target);
   }
 
@@ -248,6 +252,10 @@ export class FilePanelComponent implements OnInit {
       return `fas fa-file-pdf sftp-file-icon${colorClass('pdf')}`;
     }
     return `fas fa-file sftp-file-icon${colorClass('file')}`;
+  }
+
+  getPermissions(entry: FileEntry): string {
+    return modeToSymbolicString(entry);
   }
 
   // -- Context menu -----------------------------------------------------
@@ -348,17 +356,15 @@ export class FilePanelComponent implements OnInit {
   }
 
   async deleteEntry(entry: FileEntry): Promise<void> {
-    if (this.config.store.sftpXp.confirmDelete) {
-      const result = await this.platform.showMessageBox({
-        type: 'warning',
-        message: `Delete "${entry.name}"?`,
-        buttons: ['Delete', 'Cancel'],
-        defaultId: 1,
-        cancelId: 1,
-      });
-      if (result.response !== 0) {
-        return;
-      }
+    const result = await this.platform.showMessageBox({
+      type: 'warning',
+      message: `Delete "${entry.name}"?`,
+      buttons: ['Delete', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1,
+    });
+    if (result.response !== 0) {
+      return;
     }
     try {
       await this.fs.remove(entry.path, entry.isDirectory);

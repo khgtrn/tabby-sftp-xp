@@ -5,7 +5,10 @@
         <i class="fas fa-file-code"></i>
       </span>
       <span *ngIf="dirty" class="dirty-indicator" title="Unsaved changes"></span>
-      <span class="file-name" [title]="fileName">{{ fileName }}</span>
+      <span class="file-details">
+        <span class="file-name" [title]="fileName">{{ fileName }}</span>
+        <span class="file-path" [title]="filePath">{{ filePath }}</span>
+      </span>
     </div>
     <div class="editor-actions">
       <button class="btn btn-sm btn-secondary" [disabled]="saving || loading" (click)="close()">
@@ -62,5 +65,10 @@
     <span class="state-icon"><i class="fas fa-exclamation-triangle"></i></span>
     <span>{{ loadError }}</span>
   </div>
-  <div #editorHost class="editor-host" [hidden]="loading || loadError"></div>
+  <div
+    #editorHost
+    class="editor-host"
+    [hidden]="loading || loadError"
+    (contextmenu)="showEditorContextMenu($event)"
+  ></div>
 </div>

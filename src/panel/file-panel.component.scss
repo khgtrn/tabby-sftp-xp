@@ -6,6 +6,7 @@
   min-height: 0;
   flex: 1 1 0;
   overflow: hidden;
+  container-type: inline-size;
 }
 
 .file-panel {
@@ -69,6 +70,19 @@
   background: var(--sftp-surface);
 }
 
+.path-bar {
+  min-height: 41px;
+
+  .form-control {
+    height: 32px;
+    min-height: 32px;
+    margin: 0;
+    padding: 6px 9px;
+    box-sizing: border-box;
+    line-height: 18px;
+  }
+}
+
 .filter-bar {
   padding-top: 3px;
   padding-bottom: 7px;
@@ -76,8 +90,9 @@
 
 .path-label {
   overflow: hidden;
-  min-height: 32px;
+  height: 32px;
   padding: 6px 9px;
+  box-sizing: border-box;
   border: 1px solid transparent;
   border-radius: var(--sftp-radius-sm);
   color: var(--sftp-text);
@@ -109,7 +124,7 @@
 .file-row {
   display: flex;
   min-height: 34px;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 6px 9px;
   border: 1px solid transparent;
@@ -137,9 +152,44 @@
   }
 }
 
+.file-list-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 9px 5px 35px;
+  color: var(--sftp-text-muted);
+  font-size: 0.72rem;
+  user-select: none;
+}
+
+.file-name-column {
+  min-width: 0;
+  flex: 1;
+}
+
+.file-modified-column,
+.file-modified {
+  width: 138px;
+  flex: 0 0 138px;
+}
+
+.file-permissions-column,
+.file-permissions {
+  width: 82px;
+  flex: 0 0 82px;
+}
+
+.file-size-column,
+.file-size {
+  width: 72px;
+  flex: 0 0 72px;
+  text-align: right;
+}
+
 .sftp-file-icon {
   width: 18px;
   flex: 0 0 18px;
+  margin-top: 2px;
   text-align: center;
 }
 
@@ -173,26 +223,41 @@
 }
 
 .file-name {
-  overflow: hidden;
   min-width: 0;
   flex: 1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
-.file-size {
-  flex: 0 0 auto;
+.file-size,
+.file-modified,
+.file-permissions {
   color: var(--sftp-text-muted);
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-@media (max-width: 520px) {
+.file-permissions {
+  font-family: var(--font-monospace, monospace);
+}
+
+@container (max-width: 620px) {
   .toolbar {
     overflow-x: auto;
   }
 
-  .file-size {
+  .file-modified,
+  .file-modified-column,
+  .file-permissions,
+  .file-permissions-column {
+    display: none;
+  }
+}
+
+@container (max-width: 360px) {
+  .file-size,
+  .file-size-column {
     display: none;
   }
 }

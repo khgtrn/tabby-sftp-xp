@@ -67,20 +67,28 @@
     (click)="onFileListClick($event)"
     (contextmenu)="showEmptyAreaMenu($event)"
   >
+    <div class="file-list-header" *ngIf="!loading && filteredEntries.length">
+      <span class="file-name-column">Name</span>
+      <span class="file-modified-column">Modified</span>
+      <span class="file-permissions-column">Permissions</span>
+      <span class="file-size-column">Size</span>
+    </div>
     <div *ngIf="loading" class="text-muted p-2">Loading...</div>
     <div *ngIf="errorMessage && !loading" class="text-danger p-2">{{ errorMessage }}</div>
     <div
+      *ngFor="let entry of filteredEntries"
       class="file-row"
       [class.file-row--cut]="isCut(entry)"
       [class.file-row--selected]="isSelected(entry)"
-      *ngFor="let entry of filteredEntries"
       (click)="selectEntry(entry)"
       (dblclick)="open(entry)"
       (contextmenu)="showEntryMenu(entry, $event)"
     >
       <i [class]="getIcon(entry)"></i>
       <span class="file-name">{{ entry.name }}</span>
-      <span class="file-size" *ngIf="!entry.isDirectory">{{ entry.size }} B</span>
+      <span class="file-modified">{{ entry.mtime | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+      <span class="file-permissions">{{ getPermissions(entry) }}</span>
+      <span class="file-size">{{ entry.isDirectory ? '' : entry.size + ' B' }}</span>
     </div>
     <div *ngIf="!loading && !filteredEntries.length" class="text-muted p-2">(empty)</div>
   </div>

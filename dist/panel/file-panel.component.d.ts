@@ -45,6 +45,7 @@ export declare class FilePanelComponent implements OnInit {
     open(entry: FileEntry): Promise<void>;
     editFile(entry: FileEntry): Promise<void>;
     getIcon(entry: FileEntry): string;
+    getPermissions(entry: FileEntry): string;
     showEmptyAreaMenu(event: MouseEvent): void;
     showEntryMenu(entry: FileEntry, event: MouseEvent): void;
     rename(entry: FileEntry): Promise<void>;

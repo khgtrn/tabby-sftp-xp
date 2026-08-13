@@ -6,6 +6,10 @@ export declare class SftpXpSettingsTabComponent implements OnDestroy {
     readonly config: ConfigService;
     private readonly platform;
     private readonly theme;
+    readonly editorThemes: readonly {
+        value: import("../editor/editor-themes").EditorThemeId;
+        label: string;
+    }[];
     constructor(config: ConfigService, platform: PlatformService, theme: SftpXpThemeService);
     pickDownloadFolder(): Promise<void>;
     pickTempFolder(): Promise<void>;

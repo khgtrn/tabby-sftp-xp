@@ -115,3 +115,22 @@ export function permissionsToMode(p: PosixPermissions): number {
 export function modeToOctalString(mode: number): string {
   return (mode & 0o777).toString(8).padStart(3, '0');
 }
+
+/** Formats an entry's type and permission bits like the first column of `ls -l`. */
+export function modeToSymbolicString(entry: Pick<FileEntry, 'isDirectory' | 'isSymlink' | 'mode'>): string {
+  const type = entry.isSymlink ? 'l' : entry.isDirectory ? 'd' : '-';
+  const bits = entry.mode & 0o777;
+  const flags = [
+    [0o400, 'r'],
+    [0o200, 'w'],
+    [0o100, 'x'],
+    [0o040, 'r'],
+    [0o020, 'w'],
+    [0o010, 'x'],
+    [0o004, 'r'],
+    [0o002, 'w'],
+    [0o001, 'x'],
+  ] as const;
+
+  return type + flags.map(([flag, label]) => (bits & flag ? label : '-')).join('');
+}

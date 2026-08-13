@@ -16,9 +16,15 @@ export class SftpXpConfigProvider extends ConfigProvider {
       tempFolder: getTempDir(),
       maxCacheSizeMB: 512,
       openFileSizeLimitMB: 10,
-      autoUpload: true,
-      confirmDelete: true,
       showHiddenFiles: true,
+      editor: {
+        theme: 'default',
+        minimap: true,
+        fontFamily: 'JetBrains Mono, Cascadia Code, Consolas, monospace',
+        fontSize: 14,
+        lineHeight: 1.5,
+        letterSpacing: 1,
+      },
     },
   };
 }

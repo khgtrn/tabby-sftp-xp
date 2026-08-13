@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, ElementRef, Injector, OnDestroy, OnInit } from '@angular/core';
 import { AppService, BaseTabComponent, NotificationsService, PlatformService } from 'tabby-core';
-import { IFileSystem } from '../filesystem/models';
+import type { IFileSystem } from '../filesystem/models';
 import { SftpXpThemeService } from '../theme/theme.service';
 import { EditorCacheService } from './editor-cache.service';
 /** Tab hosting a Monaco editor to edit a local or (downloaded) remote file, per Function.md. */
@@ -23,6 +23,7 @@ export declare class EditorTabComponent extends BaseTabComponent implements OnIn
     connectionLostMessage: string | null;
     constructor(injector: Injector, app: AppService, editorCache: EditorCacheService, notifications: NotificationsService, platform: PlatformService, changeDetector: ChangeDetectorRef, theme: SftpXpThemeService);
     ngOnInit(): Promise<void>;
+    showEditorContextMenu(event: MouseEvent): void;
     onKeydown(event: KeyboardEvent): void;
     save(): Promise<boolean>;
     close(): Promise<void>;

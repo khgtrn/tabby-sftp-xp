@@ -9,14 +9,25 @@ import {
   ViewChild,
 } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { AppService, BaseTabComponent, NotificationsService, PlatformService } from 'tabby-core';
+import type { MenuItemOptions } from 'tabby-core';
+import {
+  AppService,
+  BaseTabComponent,
+  NotificationsService,
+  PlatformService,
+} from 'tabby-core';
 import { getErrorMessage } from '../core/errors';
-import { IFileSystem } from '../filesystem/models';
+import type { IFileSystem } from '../filesystem/models';
 import { TabbySftpFileSystem } from '../sftp/tabby-sftp-filesystem';
 import { SftpXpThemeService } from '../theme/theme.service';
 import { EditorCacheService } from './editor-cache.service';
 import template from './editor-tab.component.html';
 import styles from './editor-tab.component.scss';
+import type { EditorThemeId } from './editor-themes';
+import {
+  registerEditorThemes,
+  resolveEditorTheme,
+} from './editor-themes';
 
 const LANGUAGE_BY_EXTENSION: Record<string, string> = {
   js: 'javascript',
@@ -80,6 +91,7 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
   #localPath!: string;
   #sessionTag = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   #themeSubscription = new Subscription();
+  #settingsSubscription = new Subscription();
   #connectionSubscription = new Subscription();
   #monaco: any = null;
   #cleanupPromise: Promise<void> | null = null;
@@ -95,6 +107,7 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
   ) {
     super(injector);
     this.#themeSubscription.add(this.#themeChanged());
+    this.#settingsSubscription.add(this.config.changed$.subscribe(() => this.#applyEditorSettings()));
   }
 
   async ngOnInit(): Promise<void> {
@@ -133,32 +146,167 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
   async #initMonaco(content: string): Promise<void> {
     const monaco = await import('monaco-editor');
     this.#monaco = monaco;
+    registerEditorThemes(monaco);
+    const settings = this.#editorSettings();
     this.#editor = monaco.editor.create(this.editorHost.nativeElement, {
       value: content,
       language: this.#detectLanguage(this.fileName),
       automaticLayout: true,
-      theme: this.theme.current === 'dark' ? 'vs-dark' : 'vs',
-      minimap: { enabled: true },
-      fontFamily: 'JetBrains Mono, Cascadia Code, Consolas, monospace',
-      fontSize: 14,
-      lineHeight: 22,
-      letterSpacing: 0.2,
+      theme: resolveEditorTheme(settings.theme, this.theme.current),
+      minimap: { enabled: settings.minimap },
+      fontFamily: settings.fontFamily,
+      fontSize: settings.fontSize,
+      lineHeight: settings.lineHeight,
+      letterSpacing: settings.letterSpacing,
       padding: {
         top: 10,
         bottom: 10,
       },
       lineNumbersMinChars: 3,
       scrollBeyondLastLine: false,
+      contextmenu: false,
     });
     this.#editor.onDidChangeModelContent(() => {
       this.dirty = true;
     });
+    this.#registerClipboardActions(monaco);
     this.#editor.layout();
+  }
+
+  #registerClipboardActions(monaco: any): void {
+    this.#editor.addAction({
+      id: 'sftp-xp.copy',
+      label: 'Copy',
+      keybindings: [
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC,
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.Insert,
+      ],
+      contextMenuGroupId: '9_cutcopypaste',
+      contextMenuOrder: 1,
+      run: () => this.#copySelection(),
+    });
+    this.#editor.addAction({
+      id: 'sftp-xp.cut',
+      label: 'Cut',
+      keybindings: [
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyX,
+        monaco.KeyMod.Shift | monaco.KeyCode.Delete,
+      ],
+      contextMenuGroupId: '9_cutcopypaste',
+      contextMenuOrder: 2,
+      run: () => this.#cutSelection(monaco),
+    });
+    this.#editor.addAction({
+      id: 'sftp-xp.paste',
+      label: 'Paste',
+      keybindings: [
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV,
+        monaco.KeyMod.Shift | monaco.KeyCode.Insert,
+      ],
+      contextMenuGroupId: '9_cutcopypaste',
+      contextMenuOrder: 3,
+      run: () => this.#pasteClipboard(),
+    });
+  }
+
+  #copySelection(): void {
+    const model = this.#editor?.getModel();
+    const selection = this.#editor?.getSelection();
+    if (!model || !selection) {
+      return;
+    }
+
+    const text = selection.isEmpty()
+      ? model.getLineContent(selection.startLineNumber) + model.getEOL()
+      : model.getValueInRange(selection);
+    this.platform.setClipboard({ text });
+  }
+
+  #cutSelection(monaco: any): void {
+    const model = this.#editor?.getModel();
+    const selection = this.#editor?.getSelection();
+    if (!model || !selection) {
+      return;
+    }
+
+    this.#copySelection();
+    let range = selection;
+    if (selection.isEmpty()) {
+      const line = selection.startLineNumber;
+      range = line < model.getLineCount()
+        ? new monaco.Range(line, 1, line + 1, 1)
+        : new monaco.Range(line, 1, line, model.getLineMaxColumn(line));
+    }
+    this.#replaceRange(range, 'clipboard.cut', '');
+  }
+
+  #pasteClipboard(): void {
+    const selection = this.#editor?.getSelection();
+    if (!selection) {
+      return;
+    }
+    this.#replaceRange(selection, 'clipboard.paste', this.platform.readClipboard());
+  }
+
+  #replaceRange(range: any, source: string, text: string): void {
+    this.#editor.pushUndoStop();
+    this.#editor.executeEdits(source, [{ range, text, forceMoveMarkers: true }]);
+    this.#editor.pushUndoStop();
+    this.#editor.focus();
+  }
+
+  showEditorContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!this.#editor) {
+      return;
+    }
+
+    const items: MenuItemOptions[] = [
+      { label: 'Cut (Ctrl+X)', click: () => this.#cutSelection(this.#monaco) },
+      { label: 'Copy (Ctrl+C)', click: () => this.#copySelection() },
+      { label: 'Paste (Ctrl+V)', enabled: !!this.platform.readClipboard(), click: () => this.#pasteClipboard() },
+    ];
+    this.platform.popupContextMenu(items, event);
   }
 
   #themeChanged(): Subscription {
     return this.theme.changed$.subscribe(() => {
-      this.#monaco?.editor.setTheme(this.theme.current === 'dark' ? 'vs-dark' : 'vs');
+      this.#applyEditorSettings();
+    });
+  }
+
+  #editorSettings(): {
+    theme: EditorThemeId;
+    minimap: boolean;
+    fontFamily: string;
+    fontSize: number;
+    lineHeight: number;
+    letterSpacing: number;
+  } {
+    const settings = this.config.store.sftpXp.editor;
+    return {
+      theme: settings.theme as EditorThemeId,
+      minimap: settings.minimap,
+      fontFamily: settings.fontFamily,
+      fontSize: settings.fontSize,
+      lineHeight: settings.lineHeight,
+      letterSpacing: settings.letterSpacing,
+    };
+  }
+
+  #applyEditorSettings(): void {
+    if (!this.#editor || !this.#monaco) {
+      return;
+    }
+    const settings = this.#editorSettings();
+    this.#monaco.editor.setTheme(resolveEditorTheme(settings.theme, this.theme.current));
+    this.#editor.updateOptions({
+      minimap: { enabled: settings.minimap },
+      fontFamily: settings.fontFamily,
+      fontSize: settings.fontSize,
+      lineHeight: settings.lineHeight,
+      letterSpacing: settings.letterSpacing,
     });
   }
 
@@ -272,6 +420,7 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
 
   ngOnDestroy(): void {
     this.#themeSubscription.unsubscribe();
+    this.#settingsSubscription.unsubscribe();
     this.#connectionSubscription.unsubscribe();
     this.#editor?.dispose();
     if (this.fs?.kind === 'remote') {

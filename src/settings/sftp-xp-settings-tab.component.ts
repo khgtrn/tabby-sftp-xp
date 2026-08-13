@@ -1,5 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
 import { ConfigService, PlatformService } from 'tabby-core';
+import { EDITOR_THEME_OPTIONS } from '../editor/editor-themes';
 import { SftpXpTheme, SftpXpThemeService } from '../theme/theme.service';
 import template from './sftp-xp-settings-tab.component.html';
 import styles from './sftp-xp-settings-tab.component.scss';
@@ -10,6 +11,7 @@ import styles from './sftp-xp-settings-tab.component.scss';
   styles: [styles],
 })
 export class SftpXpSettingsTabComponent implements OnDestroy {
+  readonly editorThemes = EDITOR_THEME_OPTIONS;
   #saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
