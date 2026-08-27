@@ -2,6 +2,17 @@
 
 All notable changes to Tabby SFTP XP are documented in this file.
 
+## [1.2.0] - 2026-08-27
+
+### Added
+
+- Added drag-and-drop transfers between the local and remote panels: dragging an item into the other pane uploads or downloads it, and the destination directory refreshes automatically once the transfer finishes.
+- Dropping a file or folder now checks that the destination directory is writable before starting the transfer.
+
+### Fixed
+
+- Fixed a stale "SFTP-XP disconnected" notification appearing when the parent SSH tab was closed after its SFTP-XP explorer tab had already been closed.
+
 ## [1.1.0] - 2026-08-14
 
 ### Added

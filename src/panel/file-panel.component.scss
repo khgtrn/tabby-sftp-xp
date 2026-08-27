@@ -150,6 +150,22 @@
   &--cut {
     opacity: 0.38;
   }
+
+  &--dragging {
+    opacity: 0.4;
+  }
+
+  &--drag-over {
+    background: var(--sftp-accent-soft);
+    outline: 2px dashed var(--sftp-accent);
+    outline-offset: -2px;
+  }
+}
+
+.file-list--drag-over {
+  background: var(--sftp-accent-soft);
+  outline: 2px dashed var(--sftp-accent);
+  outline-offset: -2px;
 }
 
 .file-list-header {

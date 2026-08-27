@@ -64,8 +64,12 @@
 
   <div
     class="file-list"
+    [class.file-list--drag-over]="isListDropTarget"
     (click)="onFileListClick($event)"
     (contextmenu)="showEmptyAreaMenu($event)"
+    (dragover)="onListDragOver($event)"
+    (dragleave)="onListDragLeave()"
+    (drop)="onListDrop($event)"
   >
     <div class="file-list-header" *ngIf="!loading && filteredEntries.length">
       <span class="file-name-column">Name</span>
@@ -78,11 +82,19 @@
     <div
       *ngFor="let entry of filteredEntries"
       class="file-row"
+      draggable="true"
       [class.file-row--cut]="isCut(entry)"
       [class.file-row--selected]="isSelected(entry)"
+      [class.file-row--dragging]="draggingEntryPath === entry.path"
+      [class.file-row--drag-over]="dragOverEntryPath === entry.path"
       (click)="selectEntry(entry)"
       (dblclick)="open(entry)"
       (contextmenu)="showEntryMenu(entry, $event)"
+      (dragstart)="onEntryDragStart($event, entry)"
+      (dragend)="onEntryDragEnd()"
+      (dragover)="onEntryDragOver($event, entry)"
+      (dragleave)="onEntryDragLeave(entry)"
+      (drop)="onEntryDrop($event, entry)"
     >
       <i [class]="getIcon(entry)"></i>
       <span class="file-name">{{ entry.name }}</span>

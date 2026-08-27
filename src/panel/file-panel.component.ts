@@ -18,7 +18,8 @@ import {
 } from '../dialogs/dialogs.component';
 import { EditorTabComponent } from '../editor/editor-tab.component';
 import { ClipboardService } from '../filesystem/clipboard.service';
-import { modeToSymbolicString } from '../filesystem/models';
+import { DragDropService } from '../filesystem/drag-drop.service';
+import { isWritable, modeToSymbolicString } from '../filesystem/models';
 import type { FileEntry, IFileSystem } from '../filesystem/models';
 import { TransferService } from '../filesystem/transfer.service';
 import template from './file-panel.component.html';
@@ -52,6 +53,9 @@ export class FilePanelComponent implements OnInit {
   loading = false;
   errorMessage: string | null = null;
   selectedEntryPath: string | null = null;
+  draggingEntryPath: string | null = null;
+  dragOverEntryPath: string | null = null;
+  isListDropTarget = false;
 
   #history: string[] = [];
   #historyIndex = -1;
@@ -65,6 +69,7 @@ export class FilePanelComponent implements OnInit {
     private readonly bookmarkService: BookmarkService,
     private readonly transfer: TransferService,
     private readonly clipboard: ClipboardService,
+    private readonly dragDrop: DragDropService,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -501,6 +506,126 @@ export class FilePanelComponent implements OnInit {
       await this.refresh();
     } catch (error) {
       this.notifications.error(getErrorMessage(error));
+    }
+  }
+
+  // -- Drag & drop (upload/download between the local and remote panels) --
+
+  onEntryDragStart(event: DragEvent, entry: FileEntry): void {
+    this.dragDrop.set({ fs: this.fs, path: entry.path, isDirectory: entry.isDirectory });
+    this.draggingEntryPath = entry.path;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'copy';
+      event.dataTransfer.setData('text/plain', entry.name);
+    }
+  }
+
+  onEntryDragEnd(): void {
+    this.draggingEntryPath = null;
+    this.dragOverEntryPath = null;
+    this.isListDropTarget = false;
+    this.dragDrop.clear();
+  }
+
+  onEntryDragOver(event: DragEvent, entry: FileEntry): void {
+    if (!entry.isDirectory || !this.dragDrop.get()) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+    this.dragOverEntryPath = entry.path;
+  }
+
+  onEntryDragLeave(entry: FileEntry): void {
+    if (this.dragOverEntryPath === entry.path) {
+      this.dragOverEntryPath = null;
+    }
+  }
+
+  async onEntryDrop(event: DragEvent, entry: FileEntry): Promise<void> {
+    if (!entry.isDirectory) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.dragOverEntryPath = null;
+    await this.#handleDrop(entry.path, entry);
+  }
+
+  onListDragOver(event: DragEvent): void {
+    if (!this.dragDrop.get()) {
+      return;
+    }
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+    this.isListDropTarget = true;
+  }
+
+  onListDragLeave(): void {
+    this.isListDropTarget = false;
+  }
+
+  async onListDrop(event: DragEvent): Promise<void> {
+    event.preventDefault();
+    this.isListDropTarget = false;
+    await this.#handleDrop(this.path);
+  }
+
+  async #handleDrop(destDir: string, knownDestEntry?: FileEntry): Promise<void> {
+    const payload = this.dragDrop.get();
+    this.dragDrop.clear();
+    if (!payload) {
+      return;
+    }
+
+    if (payload.fs === this.fs) {
+      // Dropped back into the folder it already lives in: nothing to do.
+      if (payload.fs.dirname(payload.path) === destDir) {
+        return;
+      }
+      const descendantPrefix = payload.path.endsWith('/') ? payload.path : `${payload.path}/`;
+      if (payload.isDirectory && (destDir === payload.path || destDir.startsWith(descendantPrefix))) {
+        this.notifications.error("Can't move a folder into itself");
+        return;
+      }
+    }
+
+    // Best-effort only: if we can't confidently resolve the destination's mode bits,
+    // proceed anyway and let the actual write surface a real permission error.
+    const destEntry = knownDestEntry ?? (await this.#resolveEntryForPermissionCheck(destDir));
+    if (destEntry && !isWritable(destEntry)) {
+      this.notifications.error(`No write permission on "${destEntry.name || destDir}"`);
+      return;
+    }
+
+    try {
+      await this.transfer.copy(payload.fs, payload.path, this.fs, destDir);
+      await this.refresh();
+    } catch (error) {
+      this.notifications.error(getErrorMessage(error));
+    }
+  }
+
+  // Prefers the parent's list() for mode bits (matches the Permissions column) over a
+  // bare stat(), since some SFTP backends don't populate `mode` reliably on stat() alone.
+  async #resolveEntryForPermissionCheck(dirPath: string): Promise<FileEntry | null> {
+    try {
+      const parent = this.fs.dirname(dirPath);
+      if (parent !== dirPath) {
+        const siblings = await this.fs.list(parent);
+        const known = siblings.find((sibling) => sibling.path === dirPath);
+        if (known) {
+          return known;
+        }
+      }
+      return await this.fs.stat(dirPath);
+    } catch {
+      return null;
     }
   }
 

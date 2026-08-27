@@ -3,6 +3,7 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { AppService, ConfigService, NotificationsService, PlatformService } from 'tabby-core';
 import { BookmarkService } from '../bookmarks/bookmark.service';
 import { ClipboardService } from '../filesystem/clipboard.service';
+import { DragDropService } from '../filesystem/drag-drop.service';
 import type { FileEntry, IFileSystem } from '../filesystem/models';
 import { TransferService } from '../filesystem/transfer.service';
 export declare class FilePanelComponent implements OnInit {
@@ -15,6 +16,7 @@ export declare class FilePanelComponent implements OnInit {
     private readonly bookmarkService;
     private readonly transfer;
     private readonly clipboard;
+    private readonly dragDrop;
     panelRoot: ElementRef<HTMLDivElement>;
     set filterInput(input: ElementRef<HTMLInputElement> | undefined);
     fs: IFileSystem;
@@ -29,7 +31,10 @@ export declare class FilePanelComponent implements OnInit {
     loading: boolean;
     errorMessage: string | null;
     selectedEntryPath: string | null;
-    constructor(ngbModal: NgbModal, notifications: NotificationsService, platform: PlatformService, app: AppService, config: ConfigService, bookmarkService: BookmarkService, transfer: TransferService, clipboard: ClipboardService);
+    draggingEntryPath: string | null;
+    dragOverEntryPath: string | null;
+    isListDropTarget: boolean;
+    constructor(ngbModal: NgbModal, notifications: NotificationsService, platform: PlatformService, app: AppService, config: ConfigService, bookmarkService: BookmarkService, transfer: TransferService, clipboard: ClipboardService, dragDrop: DragDropService);
     ngOnInit(): Promise<void>;
     canGoBack(): boolean;
     canGoForward(): boolean;
@@ -62,6 +67,14 @@ export declare class FilePanelComponent implements OnInit {
     onFileListClick(event: MouseEvent): void;
     onPanelKeydown(event: KeyboardEvent): void;
     copyPath(entry: FileEntry): void;
+    onEntryDragStart(event: DragEvent, entry: FileEntry): void;
+    onEntryDragEnd(): void;
+    onEntryDragOver(event: DragEvent, entry: FileEntry): void;
+    onEntryDragLeave(entry: FileEntry): void;
+    onEntryDrop(event: DragEvent, entry: FileEntry): Promise<void>;
+    onListDragOver(event: DragEvent): void;
+    onListDragLeave(): void;
+    onListDrop(event: DragEvent): Promise<void>;
     openBookmarks(): void;
     addCurrentPathBookmark(): Promise<void>;
     /** Only used by the remote panel when it needs to (re)connect. */

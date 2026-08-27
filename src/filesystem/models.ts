@@ -112,6 +112,18 @@ export function permissionsToMode(p: PosixPermissions): number {
   return mode;
 }
 
+/**
+ * Best-effort writability check from POSIX permission bits: true unless nobody
+ * (owner, group, or other) has the write bit set. Local mode bits are unreliable
+ * on Windows and the connecting identity isn't always known, so this only catches
+ * clearly read-only targets (e.g. mode 555) — the actual write call still surfaces
+ * a proper error for anything more specific (e.g. wrong-owner denial).
+ */
+export function isWritable(entry: Pick<FileEntry, 'mode'>): boolean {
+  const permissions = modeToPermissions(entry.mode);
+  return permissions.ownerWrite || permissions.groupWrite || permissions.otherWrite;
+}
+
 export function modeToOctalString(mode: number): string {
   return (mode & 0o777).toString(8).padStart(3, '0');
 }

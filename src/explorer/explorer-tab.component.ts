@@ -79,6 +79,10 @@ export class ExplorerTabComponent extends BaseTabComponent implements OnInit, On
     this.#connectionSubscription.unsubscribe();
     if (this.remoteFs instanceof SftpConnection) {
       this.connectionManager.disconnect(this.remoteFs);
+    } else if (this.remoteFs instanceof TabbySftpFileSystem) {
+      // Tells SftpXpTerminalDecorator this tab is gone, so it won't report a lost
+      // connection for it later when the parent SSH tab itself closes.
+      this.remoteFs.markDisconnected('The SFTP-XP tab was closed.');
     }
     super.ngOnDestroy();
   }

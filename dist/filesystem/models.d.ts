@@ -61,6 +61,14 @@ export interface PosixPermissions {
 }
 export declare function modeToPermissions(mode: number): PosixPermissions;
 export declare function permissionsToMode(p: PosixPermissions): number;
+/**
+ * Best-effort writability check from POSIX permission bits: true unless nobody
+ * (owner, group, or other) has the write bit set. Local mode bits are unreliable
+ * on Windows and the connecting identity isn't always known, so this only catches
+ * clearly read-only targets (e.g. mode 555) — the actual write call still surfaces
+ * a proper error for anything more specific (e.g. wrong-owner denial).
+ */
+export declare function isWritable(entry: Pick<FileEntry, 'mode'>): boolean;
 export declare function modeToOctalString(mode: number): string;
 /** Formats an entry's type and permission bits like the first column of `ls -l`. */
 export declare function modeToSymbolicString(entry: Pick<FileEntry, 'isDirectory' | 'isSymlink' | 'mode'>): string;
