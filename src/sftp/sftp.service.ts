@@ -112,39 +112,50 @@ export class SftpConnection implements IFileSystem {
     })
   }
 
-  /** Re-attempts a write with `sudo`, over the same SSH connection, via an exec channel. */
+  /**
+   * Re-attempts a write with `sudo`, over the same SSH connection. Stages
+   * `data` in an unprivileged remote temp file, then copies it into place
+   * with a privileged `dd` that reads the temp file by path — so the exec
+   * channel's stdin carries only the sudo password, never file content.
+   */
   async writePrivileged(remotePath: string, data: Buffer, password: string): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
-      const command = `sudo -S -p '' dd of=${shellQuotePosix(remotePath)} status=none`
-      this.client.exec(command, (err, stream) => {
-        if (err) {
-          reject(err)
-          return
-        }
-        let stderr = ''
-        let exitCode = 0
-        stream.stderr.on('data', (chunk: Buffer) => {
-          stderr += chunk.toString()
-        })
-        stream.on('exit', (code: number) => {
-          exitCode = code
-        })
-        stream.on('close', () => {
-          if (exitCode === 0) {
-            resolve()
+    const tempPath = `/tmp/.sftp-xp-sudo-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    await this.writeFile(tempPath, data)
+    await this.chmod(tempPath, 0o600)
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const command = `sudo -S -p '' dd if=${shellQuotePosix(tempPath)} of=${shellQuotePosix(remotePath)} status=none`
+        this.client.exec(command, (err, stream) => {
+          if (err) {
+            reject(err)
             return
           }
-          if (/incorrect password|try again|no password was provided/i.test(stderr)) {
-            reject(new SudoAuthError(stderr.trim() || 'Incorrect sudo password'))
-          } else {
-            reject(new Error(stderr.trim() || `sudo exited with code ${exitCode}`))
-          }
+          let stderr = ''
+          let exitCode = 0
+          stream.stderr.on('data', (chunk: Buffer) => {
+            stderr += chunk.toString()
+          })
+          stream.on('exit', (code: number) => {
+            exitCode = code
+          })
+          stream.on('close', () => {
+            if (exitCode === 0) {
+              resolve()
+              return
+            }
+            if (/incorrect password|try again|no password was provided/i.test(stderr)) {
+              reject(new SudoAuthError(stderr.trim() || 'Incorrect sudo password'))
+            } else {
+              reject(new Error(stderr.trim() || `sudo exited with code ${exitCode}`))
+            }
+          })
+          stream.stdin.write(`${password}\n`)
+          stream.stdin.end()
         })
-        stream.stdin.write(`${password}\n`)
-        stream.stdin.write(data)
-        stream.stdin.end()
       })
-    })
+    } finally {
+      await this.remove(tempPath, false).catch(() => undefined)
+    }
   }
 
   createReadStream(filePath: string): Readable {
