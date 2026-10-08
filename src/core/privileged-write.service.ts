@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { spawn } from 'child_process';
+import { randomBytes } from 'crypto';
 import * as fsp from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
@@ -52,11 +53,8 @@ export class PrivilegedWriteService {
       return;
     }
     if (process.platform === 'darwin') {
-      const tempPath = path.join(
-        os.tmpdir(),
-        `sftp-xp-sudo-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      );
-      await fsp.writeFile(tempPath, content);
+      const tempPath = path.join(os.tmpdir(), `sftp-xp-sudo-${randomBytes(16).toString('hex')}`);
+      await fsp.writeFile(tempPath, content, { mode: 0o600, flag: 'wx' });
       try {
         await runProcess('osascript', buildMacSudoCommandArgs(targetPath, tempPath));
       } finally {

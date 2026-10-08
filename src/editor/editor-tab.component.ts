@@ -421,6 +421,7 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
     modal.componentInstance.message = `Enter the sudo password for this SFTP connection to save ${this.fileName}.`;
     const password = await modal.result.catch(() => null);
     if (!password) {
+      this.notifications.error(`Save cancelled: changes to ${this.fileName} were not saved.`);
       return false;
     }
     try {

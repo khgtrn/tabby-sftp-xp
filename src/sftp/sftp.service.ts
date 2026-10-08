@@ -115,14 +115,18 @@ export class SftpConnection implements IFileSystem {
 
   /**
    * Re-attempts a write with `sudo`, over the same SSH connection. Stages
-   * `data` in an unprivileged remote temp file, then copies it into place
-   * with a privileged `dd` that reads the temp file by path — so the exec
-   * channel's stdin carries only the sudo password, never file content.
+   * `data` in an unprivileged remote temp file (created exclusively, with
+   * owner-only permissions set atomically — see the design notes above),
+   * then copies it into place with a privileged `dd` that reads the temp
+   * file by path — so the exec channel's stdin carries only the sudo
+   * password, never file content.
    */
   async writePrivileged(remotePath: string, data: Buffer, password: string): Promise<void> {
     const tempPath = `/tmp/.sftp-xp-sudo-${randomBytes(16).toString('hex')}`
-    await this.writeFileExclusive(tempPath, data)
+    let tempFileCreated = false
     try {
+      await this.writeFileExclusive(tempPath, data)
+      tempFileCreated = true
       await new Promise<void>((resolve, reject) => {
         const command = `sudo -S -p '' dd if=${shellQuotePosix(tempPath)} of=${shellQuotePosix(remotePath)} status=none`
         this.client.exec(command, (err, stream) => {
@@ -131,7 +135,11 @@ export class SftpConnection implements IFileSystem {
             return
           }
           let stderr = ''
-          let exitCode = 0
+          let exitCode: number | null = null
+          // Drain stdout so the channel can reach 'close' — a paused
+          // Readable that's never read never emits 'end', which ssh2's
+          // channel-close handling waits on.
+          stream.resume()
           stream.stderr.on('data', (chunk: Buffer) => {
             stderr += chunk.toString()
           })
@@ -146,7 +154,7 @@ export class SftpConnection implements IFileSystem {
             if (/incorrect password|try again|no password was provided/i.test(stderr)) {
               reject(new SudoAuthError(stderr.trim() || 'Incorrect sudo password'))
             } else {
-              reject(new Error(stderr.trim() || `sudo exited with code ${exitCode}`))
+              reject(new Error(stderr.trim() || `sudo exited with code ${exitCode ?? 'unknown'}`))
             }
           })
           stream.stdin.write(`${password}\n`)
@@ -154,7 +162,13 @@ export class SftpConnection implements IFileSystem {
         })
       })
     } finally {
-      await this.remove(tempPath, false).catch(() => undefined)
+      // Only clean up a file this call actually created — if
+      // writeFileExclusive itself failed (e.g. a path collision), there is
+      // nothing of ours to remove, and the path might belong to something
+      // else entirely.
+      if (tempFileCreated) {
+        await this.remove(tempPath, false).catch(() => undefined)
+      }
     }
   }
 
