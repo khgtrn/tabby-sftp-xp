@@ -16,7 +16,8 @@ import {
   NotificationsService,
   PlatformService,
 } from 'tabby-core';
-import { getErrorMessage } from '../core/errors';
+import { getErrorMessage, isPermissionError } from '../core/errors';
+import { PrivilegedWriteService } from '../core/privileged-write.service';
 import type { IFileSystem } from '../filesystem/models';
 import { TabbySftpFileSystem } from '../sftp/tabby-sftp-filesystem';
 import { SftpXpThemeService } from '../theme/theme.service';
@@ -104,6 +105,7 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
     private readonly platform: PlatformService,
     private readonly changeDetector: ChangeDetectorRef,
     private readonly theme: SftpXpThemeService,
+    private readonly privilegedWrite: PrivilegedWriteService,
   ) {
     super(injector);
     this.#themeSubscription.add(this.#themeChanged());
@@ -328,8 +330,8 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
       return false;
     }
     this.saving = true;
+    const content = this.#editor.getValue();
     try {
-      const content = this.#editor.getValue();
       await this.editorCache.writeLocal(this.#localPath, content);
       if (this.fs instanceof TabbySftpFileSystem && !this.fs.connected) {
         this.notifications.error(
@@ -345,10 +347,16 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
       return true;
     } catch (error) {
       const message = getErrorMessage(error);
+      const canSudoLocal =
+        this.fs.kind === 'local' && isPermissionError(error) && PrivilegedWriteService.isSupported;
+      const buttons = ['Retry', 'Discard', 'Keep local'];
+      if (canSudoLocal) {
+        buttons.push('Retry with sudo');
+      }
       const action = await this.platform.showMessageBox({
         type: 'error',
         message: `Failed to upload file: ${message}`,
-        buttons: ['Retry', 'Discard', 'Keep local'],
+        buttons,
         defaultId: 0,
         cancelId: 2,
       });
@@ -356,9 +364,25 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
         this.saving = false;
         return this.save();
       }
+      if (canSudoLocal && action.response === 3) {
+        this.saving = false;
+        return this.#retrySaveLocalWithSudo(content);
+      }
       return false;
     } finally {
       this.saving = false;
+    }
+  }
+
+  async #retrySaveLocalWithSudo(content: string): Promise<boolean> {
+    try {
+      await this.privilegedWrite.writeLocalFile(this.filePath, Buffer.from(content, 'utf-8'));
+      this.dirty = false;
+      this.notifications.notice(`Saved ${this.fileName}`);
+      return true;
+    } catch (error) {
+      this.notifications.error(`Could not save with elevated privileges: ${getErrorMessage(error)}`);
+      return false;
     }
   }
 
