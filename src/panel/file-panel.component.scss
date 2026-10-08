@@ -79,6 +79,7 @@
     margin: 0;
     padding: 6px 9px;
     box-sizing: border-box;
+    font-size: 1rem;
     line-height: 18px;
   }
 }
@@ -96,6 +97,7 @@
   border: 1px solid transparent;
   border-radius: var(--sftp-radius-sm);
   color: var(--sftp-text);
+  font-size: 1rem;
   cursor: text;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -112,6 +114,7 @@
 }
 
 .file-list {
+  position: relative;
   min-height: 0;
   flex: 1;
   overflow-y: auto;
@@ -119,6 +122,28 @@
   border-top: 1px solid var(--sftp-divider-faint);
   scrollbar-color: var(--sftp-border) transparent;
   scrollbar-width: thin;
+}
+
+.file-list-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.file-list-loading-badge {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: var(--sftp-radius-md);
+  color: var(--sftp-accent);
+  background: var(--sftp-accent-soft);
+  box-shadow: var(--sftp-shadow);
+  font-size: 1.1rem;
 }
 
 .file-row {

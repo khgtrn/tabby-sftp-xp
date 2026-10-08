@@ -1,4 +1,4 @@
-import { ElementRef, OnInit } from '@angular/core';
+import { ChangeDetectorRef, ElementRef, OnInit } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { AppService, ConfigService, NotificationsService, PlatformService } from 'tabby-core';
 import { BookmarkService } from '../bookmarks/bookmark.service';
@@ -17,7 +17,9 @@ export declare class FilePanelComponent implements OnInit {
     private readonly transfer;
     private readonly clipboard;
     private readonly dragDrop;
+    private readonly changeDetector;
     panelRoot: ElementRef<HTMLDivElement>;
+    fileListEl: ElementRef<HTMLDivElement>;
     set filterInput(input: ElementRef<HTMLInputElement> | undefined);
     fs: IFileSystem;
     side: 'local' | 'remote';
@@ -29,12 +31,11 @@ export declare class FilePanelComponent implements OnInit {
     showFilter: boolean;
     filterText: string;
     loading: boolean;
-    errorMessage: string | null;
-    selectedEntryPath: string | null;
-    draggingEntryPath: string | null;
+    selectedPaths: Set<string>;
+    draggingPaths: Set<string>;
     dragOverEntryPath: string | null;
     isListDropTarget: boolean;
-    constructor(ngbModal: NgbModal, notifications: NotificationsService, platform: PlatformService, app: AppService, config: ConfigService, bookmarkService: BookmarkService, transfer: TransferService, clipboard: ClipboardService, dragDrop: DragDropService);
+    constructor(ngbModal: NgbModal, notifications: NotificationsService, platform: PlatformService, app: AppService, config: ConfigService, bookmarkService: BookmarkService, transfer: TransferService, clipboard: ClipboardService, dragDrop: DragDropService, changeDetector: ChangeDetectorRef);
     ngOnInit(): Promise<void>;
     canGoBack(): boolean;
     canGoForward(): boolean;
@@ -54,17 +55,19 @@ export declare class FilePanelComponent implements OnInit {
     showEmptyAreaMenu(event: MouseEvent): void;
     showEntryMenu(entry: FileEntry, event: MouseEvent): void;
     rename(entry: FileEntry): Promise<void>;
-    deleteEntry(entry: FileEntry): Promise<void>;
+    deleteSelection(): Promise<void>;
     editPermissions(entry: FileEntry): Promise<void>;
     showProperties(entry: FileEntry): void;
-    copyEntry(entry: FileEntry): void;
-    cutEntry(entry: FileEntry): void;
+    copySelection(): void;
+    cutSelection(): void;
     isCut(entry: FileEntry): boolean;
     cancelCut(): void;
-    selectEntry(entry: FileEntry): void;
+    /** Plain click selects one item; Ctrl/Cmd toggles it; Shift selects the range from the anchor. */
+    onEntryClick(event: MouseEvent, entry: FileEntry): void;
     isSelected(entry: FileEntry): boolean;
     focusPanel(): void;
     onFileListClick(event: MouseEvent): void;
+    onFileListMouseDown(event: MouseEvent): void;
     onPanelKeydown(event: KeyboardEvent): void;
     copyPath(entry: FileEntry): void;
     onEntryDragStart(event: DragEvent, entry: FileEntry): void;

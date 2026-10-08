@@ -63,31 +63,31 @@
   </div>
 
   <div
+    #fileList
     class="file-list"
     [class.file-list--drag-over]="isListDropTarget"
     (click)="onFileListClick($event)"
+    (mousedown)="onFileListMouseDown($event)"
     (contextmenu)="showEmptyAreaMenu($event)"
     (dragover)="onListDragOver($event)"
     (dragleave)="onListDragLeave()"
     (drop)="onListDrop($event)"
   >
-    <div class="file-list-header" *ngIf="!loading && filteredEntries.length">
+    <div class="file-list-header" *ngIf="filteredEntries.length">
       <span class="file-name-column">Name</span>
       <span class="file-modified-column">Modified</span>
       <span class="file-permissions-column">Permissions</span>
       <span class="file-size-column">Size</span>
     </div>
-    <div *ngIf="loading" class="text-muted p-2">Loading...</div>
-    <div *ngIf="errorMessage && !loading" class="text-danger p-2">{{ errorMessage }}</div>
     <div
       *ngFor="let entry of filteredEntries"
       class="file-row"
       draggable="true"
       [class.file-row--cut]="isCut(entry)"
       [class.file-row--selected]="isSelected(entry)"
-      [class.file-row--dragging]="draggingEntryPath === entry.path"
+      [class.file-row--dragging]="draggingPaths.has(entry.path)"
       [class.file-row--drag-over]="dragOverEntryPath === entry.path"
-      (click)="selectEntry(entry)"
+      (click)="onEntryClick($event, entry)"
       (dblclick)="open(entry)"
       (contextmenu)="showEntryMenu(entry, $event)"
       (dragstart)="onEntryDragStart($event, entry)"
@@ -103,5 +103,8 @@
       <span class="file-size">{{ entry.isDirectory ? '' : entry.size + ' B' }}</span>
     </div>
     <div *ngIf="!loading && !filteredEntries.length" class="text-muted p-2">(empty)</div>
+    <div class="file-list-loading" *ngIf="loading">
+      <span class="file-list-loading-badge"><i class="fas fa-spinner fa-spin"></i></span>
+    </div>
   </div>
 </div>

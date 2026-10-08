@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import {
   AppService,
@@ -32,6 +32,7 @@ import styles from './file-panel.component.scss';
 })
 export class FilePanelComponent implements OnInit {
   @ViewChild('panelRoot', { static: true }) panelRoot!: ElementRef<HTMLDivElement>;
+  @ViewChild('fileList', { static: true }) fileListEl!: ElementRef<HTMLDivElement>;
 
   @ViewChild('filterInput')
   set filterInput(input: ElementRef<HTMLInputElement> | undefined) {
@@ -51,14 +52,21 @@ export class FilePanelComponent implements OnInit {
   showFilter = false;
   filterText = '';
   loading = false;
-  errorMessage: string | null = null;
-  selectedEntryPath: string | null = null;
-  draggingEntryPath: string | null = null;
+  selectedPaths = new Set<string>();
+  draggingPaths = new Set<string>();
   dragOverEntryPath: string | null = null;
   isListDropTarget = false;
 
   #history: string[] = [];
   #historyIndex = -1;
+  #anchorPath: string | null = null;
+
+  // Drag-to-select-range: only armed when the mousedown starts outside any file row
+  // (background/header), so it never fights with the native file drag-and-drop below.
+  #marqueeStartClientY: number | null = null;
+  #marqueeAnchorIndex: number | null = null;
+  #marqueeActive = false;
+  #marqueeJustFinished = false;
 
   constructor(
     private readonly ngbModal: NgbModal,
@@ -70,6 +78,7 @@ export class FilePanelComponent implements OnInit {
     private readonly transfer: TransferService,
     private readonly clipboard: ClipboardService,
     private readonly dragDrop: DragDropService,
+    private readonly changeDetector: ChangeDetectorRef,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -80,10 +89,10 @@ export class FilePanelComponent implements OnInit {
 
   async #navigate(newPath: string, pushHistory = true): Promise<void> {
     if (newPath !== this.path) {
-      this.selectedEntryPath = null;
+      this.selectedPaths = new Set();
+      this.#anchorPath = null;
     }
     this.loading = true;
-    this.errorMessage = null;
     try {
       const entries = await this.fs.list(newPath);
       this.path = newPath;
@@ -95,11 +104,13 @@ export class FilePanelComponent implements OnInit {
         this.#historyIndex = this.#history.length - 1;
       }
     } catch (error) {
-      const message = getErrorMessage(error);
-      this.errorMessage = message;
-      this.notifications.error(message);
+      this.notifications.error(getErrorMessage(error));
     } finally {
       this.loading = false;
+      // The SFTP session's callbacks (ssh2 / Tabby's SSH backend) resolve outside
+      // Angular's zone, so without this the view stays stuck on "Loading..." until
+      // some unrelated zone-patched event (e.g. a click) forces the next CD pass.
+      this.changeDetector.detectChanges();
     }
   }
 
@@ -267,7 +278,8 @@ export class FilePanelComponent implements OnInit {
 
   showEmptyAreaMenu(event: MouseEvent): void {
     event.preventDefault();
-    this.selectedEntryPath = null;
+    this.selectedPaths = new Set();
+    this.#anchorPath = null;
     this.focusPanel();
     const items: MenuItemOptions[] = [
       { label: 'New Folder', click: () => this.#createFolder() },
@@ -286,29 +298,46 @@ export class FilePanelComponent implements OnInit {
   showEntryMenu(entry: FileEntry, event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
-    this.selectEntry(entry);
+    if (!this.selectedPaths.has(entry.path)) {
+      this.selectedPaths = new Set([entry.path]);
+      this.#anchorPath = entry.path;
+    }
+    this.focusPanel();
+
+    const count = this.selectedPaths.size;
+    if (count > 1) {
+      const items: MenuItemOptions[] = [
+        { label: `Delete ${count} items (Delete)`, click: () => this.deleteSelection() },
+        { label: `Copy ${count} items (Ctrl+C)`, click: () => this.copySelection() },
+        { label: `Cut ${count} items (Ctrl+X)`, click: () => this.cutSelection() },
+        { label: 'Refresh', click: () => this.refresh() },
+      ];
+      this.platform.popupContextMenu(items, event);
+      return;
+    }
+
     const items: MenuItemOptions[] = entry.isDirectory
       ? [
           { label: 'Open', click: () => this.#navigate(entry.path) },
           { label: 'Rename', click: () => this.rename(entry) },
-          { label: 'Delete (Delete)', click: () => this.deleteEntry(entry) },
+          { label: 'Delete (Delete)', click: () => this.deleteSelection() },
           { label: 'New Folder', click: () => this.#createFolder(entry.path) },
           { label: 'New File', click: () => this.#createFile(entry.path) },
           { label: 'Permissions', click: () => this.editPermissions(entry) },
           { label: 'Properties', click: () => this.showProperties(entry) },
-          { label: 'Copy (Ctrl+C)', click: () => this.copyEntry(entry) },
-          { label: 'Cut (Ctrl+X)', click: () => this.cutEntry(entry) },
+          { label: 'Copy (Ctrl+C)', click: () => this.copySelection() },
+          { label: 'Cut (Ctrl+X)', click: () => this.cutSelection() },
           { label: 'Refresh', click: () => this.refresh() },
           { label: 'Copy Path', click: () => this.copyPath(entry) },
         ]
       : [
           { label: 'Edit', click: () => this.editFile(entry) },
           { label: 'Rename', click: () => this.rename(entry) },
-          { label: 'Delete (Delete)', click: () => this.deleteEntry(entry) },
+          { label: 'Delete (Delete)', click: () => this.deleteSelection() },
           { label: 'Permissions', click: () => this.editPermissions(entry) },
           { label: 'Properties', click: () => this.showProperties(entry) },
-          { label: 'Copy (Ctrl+C)', click: () => this.copyEntry(entry) },
-          { label: 'Cut (Ctrl+X)', click: () => this.cutEntry(entry) },
+          { label: 'Copy (Ctrl+C)', click: () => this.copySelection() },
+          { label: 'Cut (Ctrl+X)', click: () => this.cutSelection() },
           { label: 'Copy Path', click: () => this.copyPath(entry) },
         ];
     this.platform.popupContextMenu(items, event);
@@ -360,10 +389,16 @@ export class FilePanelComponent implements OnInit {
     }
   }
 
-  async deleteEntry(entry: FileEntry): Promise<void> {
+  async deleteSelection(): Promise<void> {
+    const selected = this.#getSelectedEntries();
+    if (!selected.length) {
+      return;
+    }
+    const message =
+      selected.length === 1 ? `Delete "${selected[0].name}"?` : `Delete ${selected.length} items?`;
     const result = await this.platform.showMessageBox({
       type: 'warning',
-      message: `Delete "${entry.name}"?`,
+      message,
       buttons: ['Delete', 'Cancel'],
       defaultId: 1,
       cancelId: 1,
@@ -372,14 +407,14 @@ export class FilePanelComponent implements OnInit {
       return;
     }
     try {
-      await this.fs.remove(entry.path, entry.isDirectory);
-      if (this.selectedEntryPath === entry.path) {
-        this.selectedEntryPath = null;
+      for (const entry of selected) {
+        await this.fs.remove(entry.path, entry.isDirectory);
       }
-      await this.refresh();
     } catch (error) {
       this.notifications.error(getErrorMessage(error));
     }
+    this.selectedPaths = new Set();
+    await this.refresh();
   }
 
   async editPermissions(entry: FileEntry): Promise<void> {
@@ -402,22 +437,24 @@ export class FilePanelComponent implements OnInit {
     modal.componentInstance.entry = entry;
   }
 
-  copyEntry(entry: FileEntry): void {
-    this.clipboard.set({
-      op: 'copy',
-      fs: this.fs,
-      path: entry.path,
-      isDirectory: entry.isDirectory,
-    });
+  #getSelectedEntries(): FileEntry[] {
+    return this.entries.filter((entry) => this.selectedPaths.has(entry.path));
   }
 
-  cutEntry(entry: FileEntry): void {
-    this.clipboard.set({
-      op: 'cut',
-      fs: this.fs,
-      path: entry.path,
-      isDirectory: entry.isDirectory,
-    });
+  copySelection(): void {
+    const paths = this.#getSelectedEntries().map((entry) => entry.path);
+    if (!paths.length) {
+      return;
+    }
+    this.clipboard.set({ op: 'copy', fs: this.fs, paths });
+  }
+
+  cutSelection(): void {
+    const paths = this.#getSelectedEntries().map((entry) => entry.path);
+    if (!paths.length) {
+      return;
+    }
+    this.clipboard.set({ op: 'cut', fs: this.fs, paths });
   }
 
   isCut(entry: FileEntry): boolean {
@@ -425,7 +462,7 @@ export class FilePanelComponent implements OnInit {
     return (
       clipboardEntry?.op === 'cut' &&
       clipboardEntry.fs === this.fs &&
-      clipboardEntry.path === entry.path
+      clipboardEntry.paths.includes(entry.path)
     );
   }
 
@@ -435,13 +472,39 @@ export class FilePanelComponent implements OnInit {
     }
   }
 
-  selectEntry(entry: FileEntry): void {
-    this.selectedEntryPath = entry.path;
+  /** Plain click selects one item; Ctrl/Cmd toggles it; Shift selects the range from the anchor. */
+  onEntryClick(event: MouseEvent, entry: FileEntry): void {
+    if (event.shiftKey && this.#anchorPath) {
+      const anchorIndex = this.filteredEntries.findIndex((item) => item.path === this.#anchorPath);
+      const targetIndex = this.filteredEntries.findIndex((item) => item.path === entry.path);
+      if (anchorIndex !== -1 && targetIndex !== -1) {
+        const [start, end] =
+          anchorIndex < targetIndex ? [anchorIndex, targetIndex] : [targetIndex, anchorIndex];
+        this.selectedPaths = new Set(
+          this.filteredEntries.slice(start, end + 1).map((item) => item.path),
+        );
+      } else {
+        this.selectedPaths = new Set([entry.path]);
+        this.#anchorPath = entry.path;
+      }
+    } else if (event.ctrlKey || event.metaKey) {
+      const next = new Set(this.selectedPaths);
+      if (next.has(entry.path)) {
+        next.delete(entry.path);
+      } else {
+        next.add(entry.path);
+      }
+      this.selectedPaths = next;
+      this.#anchorPath = entry.path;
+    } else {
+      this.selectedPaths = new Set([entry.path]);
+      this.#anchorPath = entry.path;
+    }
     this.focusPanel();
   }
 
   isSelected(entry: FileEntry): boolean {
-    return this.selectedEntryPath === entry.path;
+    return this.selectedPaths.has(entry.path);
   }
 
   focusPanel(): void {
@@ -449,10 +512,95 @@ export class FilePanelComponent implements OnInit {
   }
 
   onFileListClick(event: MouseEvent): void {
+    if (this.#marqueeJustFinished) {
+      return;
+    }
     if (event.target === event.currentTarget) {
-      this.selectedEntryPath = null;
+      this.selectedPaths = new Set();
+      this.#anchorPath = null;
     }
     this.focusPanel();
+  }
+
+  // -- Drag-to-select-range (marquee) --------------------------------------
+  // Only arms when the mousedown starts outside any `.file-row`, so it never
+  // competes with the native file drag-and-drop started from a row.
+
+  onFileListMouseDown(event: MouseEvent): void {
+    if (event.button !== 0 || !this.filteredEntries.length) {
+      return;
+    }
+    if (event.target instanceof HTMLElement && event.target.closest('.file-row')) {
+      return;
+    }
+    event.preventDefault();
+    this.#marqueeStartClientY = event.clientY;
+    window.addEventListener('mousemove', this.#onMarqueeMouseMove);
+    window.addEventListener('mouseup', this.#onMarqueeMouseUp, { once: true });
+  }
+
+  #onMarqueeMouseMove = (event: MouseEvent): void => {
+    if (this.#marqueeStartClientY === null) {
+      return;
+    }
+    if (!this.#marqueeActive) {
+      if (Math.abs(event.clientY - this.#marqueeStartClientY) < 4) {
+        return;
+      }
+      this.#marqueeActive = true;
+      this.#marqueeAnchorIndex = this.#rowIndexAtPoint(this.#marqueeStartClientY);
+    }
+    this.#updateMarqueeSelection(event.clientY);
+  };
+
+  #onMarqueeMouseUp = (): void => {
+    window.removeEventListener('mousemove', this.#onMarqueeMouseMove);
+    if (this.#marqueeActive) {
+      this.#marqueeJustFinished = true;
+      this.focusPanel();
+      setTimeout(() => {
+        this.#marqueeJustFinished = false;
+      }, 0);
+    }
+    this.#marqueeActive = false;
+    this.#marqueeAnchorIndex = null;
+    this.#marqueeStartClientY = null;
+  };
+
+  #rowIndexAtPoint(clientY: number): number {
+    const rows = this.fileListEl.nativeElement.querySelectorAll<HTMLElement>('.file-row');
+    if (!rows.length) {
+      return -1;
+    }
+    const containerRect = this.fileListEl.nativeElement.getBoundingClientRect();
+    if (clientY <= containerRect.top) {
+      return 0;
+    }
+    if (clientY >= containerRect.bottom) {
+      return rows.length - 1;
+    }
+    for (let i = 0; i < rows.length; i++) {
+      if (clientY < rows[i].getBoundingClientRect().bottom) {
+        return i;
+      }
+    }
+    return rows.length - 1;
+  }
+
+  #updateMarqueeSelection(clientY: number): void {
+    if (this.#marqueeAnchorIndex === null) {
+      return;
+    }
+    const currentIndex = this.#rowIndexAtPoint(clientY);
+    if (currentIndex === -1) {
+      return;
+    }
+    const [start, end] =
+      this.#marqueeAnchorIndex <= currentIndex
+        ? [this.#marqueeAnchorIndex, currentIndex]
+        : [currentIndex, this.#marqueeAnchorIndex];
+    this.selectedPaths = new Set(this.filteredEntries.slice(start, end + 1).map((e) => e.path));
+    this.#anchorPath = this.filteredEntries[this.#marqueeAnchorIndex]?.path ?? null;
   }
 
   onPanelKeydown(event: KeyboardEvent): void {
@@ -460,22 +608,22 @@ export class FilePanelComponent implements OnInit {
       return;
     }
 
-    const entry = this.entries.find((item) => item.path === this.selectedEntryPath);
     const key = event.key.toLowerCase();
     const modifier = event.ctrlKey || event.metaKey;
+    const hasSelection = this.selectedPaths.size > 0;
 
-    if (modifier && key === 'c' && entry) {
+    if (modifier && key === 'c' && hasSelection) {
       event.preventDefault();
-      this.copyEntry(entry);
-    } else if (modifier && key === 'x' && entry) {
+      this.copySelection();
+    } else if (modifier && key === 'x' && hasSelection) {
       event.preventDefault();
-      this.cutEntry(entry);
+      this.cutSelection();
     } else if (modifier && key === 'v' && this.clipboard.get()) {
       event.preventDefault();
       void this.#paste();
-    } else if (event.key === 'Delete' && entry) {
+    } else if (event.key === 'Delete' && hasSelection) {
       event.preventDefault();
-      void this.deleteEntry(entry);
+      void this.deleteSelection();
     } else if (event.key === 'Escape') {
       this.cancelCut();
     }
@@ -497,10 +645,14 @@ export class FilePanelComponent implements OnInit {
       return;
     }
     try {
-      if (clip.op === 'copy') {
-        await this.transfer.copy(clip.fs, clip.path, this.fs, this.path);
-      } else {
-        await this.transfer.move(clip.fs, clip.path, this.fs, this.path);
+      for (const sourcePath of clip.paths) {
+        if (clip.op === 'copy') {
+          await this.transfer.copy(clip.fs, sourcePath, this.fs, this.path);
+        } else {
+          await this.transfer.move(clip.fs, sourcePath, this.fs, this.path);
+        }
+      }
+      if (clip.op === 'cut') {
         this.clipboard.clear();
       }
       await this.refresh();
@@ -512,8 +664,18 @@ export class FilePanelComponent implements OnInit {
   // -- Drag & drop (upload/download between the local and remote panels) --
 
   onEntryDragStart(event: DragEvent, entry: FileEntry): void {
-    this.dragDrop.set({ fs: this.fs, path: entry.path, isDirectory: entry.isDirectory });
-    this.draggingEntryPath = entry.path;
+    // Dragging a row that's already part of a multi-selection carries the whole
+    // selection; dragging an unselected row selects and drags just that one.
+    if (!this.selectedPaths.has(entry.path) || this.selectedPaths.size <= 1) {
+      this.selectedPaths = new Set([entry.path]);
+      this.#anchorPath = entry.path;
+    }
+    const dragged = this.#getSelectedEntries();
+    this.dragDrop.set({
+      fs: this.fs,
+      entries: dragged.map((item) => ({ path: item.path, isDirectory: item.isDirectory })),
+    });
+    this.draggingPaths = new Set(dragged.map((item) => item.path));
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'copy';
       event.dataTransfer.setData('text/plain', entry.name);
@@ -521,7 +683,7 @@ export class FilePanelComponent implements OnInit {
   }
 
   onEntryDragEnd(): void {
-    this.draggingEntryPath = null;
+    this.draggingPaths = new Set();
     this.dragOverEntryPath = null;
     this.isListDropTarget = false;
     this.dragDrop.clear();
@@ -583,18 +745,6 @@ export class FilePanelComponent implements OnInit {
       return;
     }
 
-    if (payload.fs === this.fs) {
-      // Dropped back into the folder it already lives in: nothing to do.
-      if (payload.fs.dirname(payload.path) === destDir) {
-        return;
-      }
-      const descendantPrefix = payload.path.endsWith('/') ? payload.path : `${payload.path}/`;
-      if (payload.isDirectory && (destDir === payload.path || destDir.startsWith(descendantPrefix))) {
-        this.notifications.error("Can't move a folder into itself");
-        return;
-      }
-    }
-
     // Best-effort only: if we can't confidently resolve the destination's mode bits,
     // proceed anyway and let the actual write surface a real permission error.
     const destEntry = knownDestEntry ?? (await this.#resolveEntryForPermissionCheck(destDir));
@@ -604,7 +754,20 @@ export class FilePanelComponent implements OnInit {
     }
 
     try {
-      await this.transfer.copy(payload.fs, payload.path, this.fs, destDir);
+      for (const item of payload.entries) {
+        if (payload.fs === this.fs) {
+          // Dropped back into the folder it already lives in: nothing to do.
+          if (payload.fs.dirname(item.path) === destDir) {
+            continue;
+          }
+          const descendantPrefix = item.path.endsWith('/') ? item.path : `${item.path}/`;
+          if (item.isDirectory && (destDir === item.path || destDir.startsWith(descendantPrefix))) {
+            this.notifications.error("Can't move a folder into itself");
+            continue;
+          }
+        }
+        await this.transfer.copy(payload.fs, item.path, this.fs, destDir);
+      }
       await this.refresh();
     } catch (error) {
       this.notifications.error(getErrorMessage(error));

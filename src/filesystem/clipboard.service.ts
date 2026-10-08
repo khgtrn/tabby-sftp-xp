@@ -4,8 +4,7 @@ import { IFileSystem } from '../filesystem/models';
 export interface ClipboardEntry {
   op: 'copy' | 'cut';
   fs: IFileSystem;
-  path: string;
-  isDirectory: boolean;
+  paths: string[];
 }
 
 /** Shared clipboard so copy/cut can be pasted across the local and remote panels. */
