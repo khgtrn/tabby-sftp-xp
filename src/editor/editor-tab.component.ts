@@ -16,9 +16,12 @@ import {
   NotificationsService,
   PlatformService,
 } from 'tabby-core';
-import { getErrorMessage, isPermissionError } from '../core/errors';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { getErrorMessage, isPermissionError, isSftpPermissionDeniedError } from '../core/errors';
 import { PrivilegedWriteService } from '../core/privileged-write.service';
+import { SudoPasswordDialogComponent } from '../dialogs/dialogs.component';
 import type { IFileSystem } from '../filesystem/models';
+import { SftpConnection, SudoAuthError } from '../sftp/sftp.service';
 import { TabbySftpFileSystem } from '../sftp/tabby-sftp-filesystem';
 import { SftpXpThemeService } from '../theme/theme.service';
 import { EditorCacheService } from './editor-cache.service';
@@ -106,6 +109,7 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
     private readonly changeDetector: ChangeDetectorRef,
     private readonly theme: SftpXpThemeService,
     private readonly privilegedWrite: PrivilegedWriteService,
+    private readonly ngbModal: NgbModal,
   ) {
     super(injector);
     this.#themeSubscription.add(this.#themeChanged());
@@ -349,8 +353,9 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
       const message = getErrorMessage(error);
       const canSudoLocal =
         this.fs.kind === 'local' && isPermissionError(error) && PrivilegedWriteService.isSupported;
+      const canSudoRemote = this.fs instanceof SftpConnection && isSftpPermissionDeniedError(error);
       const buttons = ['Retry', 'Discard', 'Keep local'];
-      if (canSudoLocal) {
+      if (canSudoLocal || canSudoRemote) {
         buttons.push('Retry with sudo');
       }
       const action = await this.platform.showMessageBox({
@@ -368,6 +373,10 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
         this.saving = false;
         return this.#retrySaveLocalWithSudo(content);
       }
+      if (canSudoRemote && action.response === 3) {
+        this.saving = false;
+        return this.#retryUploadWithSudo(this.fs as SftpConnection, content);
+      }
       return false;
     } finally {
       this.saving = false;
@@ -381,6 +390,49 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
       this.notifications.notice(`Saved ${this.fileName}`);
       return true;
     } catch (error) {
+      this.notifications.error(`Could not save with elevated privileges: ${getErrorMessage(error)}`);
+      return false;
+    }
+  }
+
+  async #retryUploadWithSudo(connection: SftpConnection, content: string): Promise<boolean> {
+    const data = Buffer.from(content, 'utf-8');
+    if (connection.password) {
+      try {
+        await connection.writePrivileged(this.filePath, data, connection.password);
+        this.dirty = false;
+        this.notifications.notice(`Saved ${this.fileName}`);
+        return true;
+      } catch (error) {
+        if (!(error instanceof SudoAuthError)) {
+          this.notifications.error(
+            `Could not save with elevated privileges: ${getErrorMessage(error)}`,
+          );
+          return false;
+        }
+        // Login password didn't work as the sudo password; fall through to prompt.
+      }
+    }
+    return this.#promptSudoPasswordAndRetry(connection, data);
+  }
+
+  async #promptSudoPasswordAndRetry(connection: SftpConnection, data: Buffer): Promise<boolean> {
+    const modal = this.ngbModal.open(SudoPasswordDialogComponent);
+    modal.componentInstance.message = `Enter the sudo password for this SFTP connection to save ${this.fileName}.`;
+    const password = await modal.result.catch(() => null);
+    if (!password) {
+      return false;
+    }
+    try {
+      await connection.writePrivileged(this.filePath, data, password);
+      this.dirty = false;
+      this.notifications.notice(`Saved ${this.fileName}`);
+      return true;
+    } catch (error) {
+      if (error instanceof SudoAuthError) {
+        this.notifications.error('Incorrect sudo password.');
+        return this.#promptSudoPasswordAndRetry(connection, data);
+      }
       this.notifications.error(`Could not save with elevated privileges: ${getErrorMessage(error)}`);
       return false;
     }
