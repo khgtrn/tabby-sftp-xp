@@ -8,7 +8,6 @@ import { TerminalDecorator } from 'tabby-terminal';
 import { BookmarkManagerComponent } from './bookmarks/bookmark-manager.component';
 import { SftpXpConfigProvider } from './config/config.provider';
 import {
-  ConnectDialogComponent,
   PermissionDialogComponent,
   PromptDialogComponent,
   PropertiesDialogComponent,
@@ -41,7 +40,6 @@ import { SftpXpThemeService } from './theme/theme.service';
     SftpXpSettingsTabComponent,
     BookmarkManagerComponent,
     PromptDialogComponent,
-    ConnectDialogComponent,
     PermissionDialogComponent,
     PropertiesDialogComponent,
   ],
