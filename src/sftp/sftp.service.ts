@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core'
 import { Client, SFTPWrapper } from 'ssh2'
 import { Readable, Writable } from 'stream'
+import { randomBytes } from 'crypto'
 import { FileEntry, IFileSystem, SftpConnectionOptions } from '../filesystem/models'
 import { shellQuotePosix } from '../core/shell-quote'
 
@@ -119,9 +120,8 @@ export class SftpConnection implements IFileSystem {
    * channel's stdin carries only the sudo password, never file content.
    */
   async writePrivileged(remotePath: string, data: Buffer, password: string): Promise<void> {
-    const tempPath = `/tmp/.sftp-xp-sudo-${Date.now()}-${Math.random().toString(36).slice(2)}`
-    await this.writeFile(tempPath, data)
-    await this.chmod(tempPath, 0o600)
+    const tempPath = `/tmp/.sftp-xp-sudo-${randomBytes(16).toString('hex')}`
+    await this.writeFileExclusive(tempPath, data)
     try {
       await new Promise<void>((resolve, reject) => {
         const command = `sudo -S -p '' dd if=${shellQuotePosix(tempPath)} of=${shellQuotePosix(remotePath)} status=none`
@@ -156,6 +156,21 @@ export class SftpConnection implements IFileSystem {
     } finally {
       await this.remove(tempPath, false).catch(() => undefined)
     }
+  }
+
+  /**
+   * Creates `path` exclusively (fails rather than silently overwriting if it
+   * already exists) with owner-only permissions set atomically at creation
+   * — there is never a window where the file exists with more permissive
+   * (e.g. default-umask) access.
+   */
+  private async writeFileExclusive(path: string, data: Buffer): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      const stream = this.sftp.createWriteStream(path, { flags: 'wx', mode: 0o600 })
+      stream.on('error', reject)
+      stream.on('close', () => resolve())
+      stream.end(data)
+    })
   }
 
   createReadStream(filePath: string): Readable {
