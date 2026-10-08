@@ -11,6 +11,7 @@ import { BookmarkManagerComponent } from '../bookmarks/bookmark-manager.componen
 import { BookmarkService } from '../bookmarks/bookmark.service';
 import { getErrorMessage } from '../core/errors';
 import {
+  ConnectDialogComponent,
   PermissionDialogComponent,
   PromptDialogComponent,
   PropertiesDialogComponent,
@@ -809,5 +810,11 @@ export class FilePanelComponent implements OnInit {
     }
     await this.bookmarkService.add(name, this.path, this.side);
     this.notifications.notice(`Added bookmark "${name}"`);
+  }
+
+  /** Only used by the remote panel when it needs to (re)connect. */
+  async promptConnect(): Promise<Record<string, any> | null> {
+    const modal = this.ngbModal.open(ConnectDialogComponent);
+    return modal.result.catch(() => null);
   }
 }
