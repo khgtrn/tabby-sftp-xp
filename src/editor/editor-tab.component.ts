@@ -372,10 +372,17 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
         return this.save();
       }
       if (canSudoLocal && action.response === 3) {
-        return this.#retrySaveLocalWithSudo(content);
+        // `await` here is load-bearing, not redundant: a bare
+        // `return this.#retrySaveLocalWithSudo(content)` would let this
+        // `catch` block's completion reach the `finally` below immediately
+        // (synchronously), releasing `saving`/`readOnly` before the retry
+        // actually finishes — `return await` suspends until the retry's
+        // promise settles, so `finally` only runs once it's truly done.
+        return await this.#retrySaveLocalWithSudo(content);
       }
       if (canSudoRemote && action.response === 3) {
-        return this.#retryUploadWithSudo(this.fs as SftpConnection, content);
+        // Same reasoning as above.
+        return await this.#retryUploadWithSudo(this.fs as SftpConnection, content);
       }
       return false;
     } finally {
