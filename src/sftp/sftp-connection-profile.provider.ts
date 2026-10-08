@@ -32,7 +32,22 @@ export class SftpXpConnectionProfileProvider extends ProfileProvider<SftpXpConne
   };
 
   async getBuiltinProfiles(): Promise<PartialProfile<SftpXpConnectionProfile>[]> {
-    return [];
+    return [
+      {
+        id: 'sftp-xp-connection:template',
+        type: 'sftp-xp-connection',
+        name: 'SFTP-XP Connection',
+        icon: 'fas fa-exchange-alt',
+        options: {
+          host: '',
+          port: 22,
+          username: '',
+        },
+        isBuiltin: true,
+        isTemplate: true,
+        weight: -1,
+      },
+    ];
   }
 
   async getNewTabParameters(
@@ -48,6 +63,15 @@ export class SftpXpConnectionProfileProvider extends ProfileProvider<SftpXpConne
     const host = profile.options?.host;
     if (!host) {
       return 'Not configured';
+    }
+    const username = profile.options?.username;
+    return username ? `${username}@${host}` : host;
+  }
+
+  getSuggestedName(profile: PartialProfile<SftpXpConnectionProfile>): string | null {
+    const host = profile.options?.host;
+    if (!host) {
+      return null;
     }
     const username = profile.options?.username;
     return username ? `${username}@${host}` : host;
