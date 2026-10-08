@@ -129,9 +129,25 @@ export class SftpConnection implements IFileSystem {
       tempFileCreated = true
       await new Promise<void>((resolve, reject) => {
         const command = `sudo -S -p '' dd if=${shellQuotePosix(tempPath)} of=${shellQuotePosix(remotePath)} status=none`
+        let settled = false
+        const timeoutId = setTimeout(() => {
+          if (settled) {
+            return
+          }
+          settled = true
+          reject(new Error('Timed out waiting for the remote sudo command to complete (30s).'))
+        }, 30_000)
+        const settle = (fn: () => void): void => {
+          if (settled) {
+            return
+          }
+          settled = true
+          clearTimeout(timeoutId)
+          fn()
+        }
         this.client.exec(command, (err, stream) => {
           if (err) {
-            reject(err)
+            settle(() => reject(err))
             return
           }
           let stderr = ''
@@ -148,13 +164,13 @@ export class SftpConnection implements IFileSystem {
           })
           stream.on('close', () => {
             if (exitCode === 0) {
-              resolve()
+              settle(resolve)
               return
             }
             if (/incorrect password|try again|no password was provided/i.test(stderr)) {
-              reject(new SudoAuthError(stderr.trim() || 'Incorrect sudo password'))
+              settle(() => reject(new SudoAuthError(stderr.trim() || 'Incorrect sudo password')))
             } else {
-              reject(new Error(stderr.trim() || `sudo exited with code ${exitCode ?? 'unknown'}`))
+              settle(() => reject(new Error(stderr.trim() || `sudo exited with code ${exitCode ?? 'unknown'}`)))
             }
           })
           stream.stdin.write(`${password}\n`)

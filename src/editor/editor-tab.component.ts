@@ -334,6 +334,7 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
       return false;
     }
     this.saving = true;
+    this.#editor.updateOptions({ readOnly: true });
     const content = this.#editor.getValue();
     try {
       await this.editorCache.writeLocal(this.#localPath, content);
@@ -367,19 +368,19 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
       });
       if (action.response === 0) {
         this.saving = false;
+        this.#editor.updateOptions({ readOnly: false });
         return this.save();
       }
       if (canSudoLocal && action.response === 3) {
-        this.saving = false;
         return this.#retrySaveLocalWithSudo(content);
       }
       if (canSudoRemote && action.response === 3) {
-        this.saving = false;
         return this.#retryUploadWithSudo(this.fs as SftpConnection, content);
       }
       return false;
     } finally {
       this.saving = false;
+      this.#editor?.updateOptions({ readOnly: false });
     }
   }
 
