@@ -46,6 +46,49 @@ export class PromptDialogComponent {
   }
 }
 
+/** Prompts for a sudo password when retrying a permission-denied remote save with elevated privileges. */
+@Component({
+  selector: 'sftp-xp-sudo-password-dialog',
+  styles: [dialogStyles],
+  template: `
+    <div class="modal-header">
+      <div class="dialog-title">
+        <span class="dialog-icon"><i class="fas fa-user-shield"></i></span>
+        <h5 class="modal-title">Sudo password required</h5>
+      </div>
+      <button class="dialog-close" type="button" title="Close" (click)="modal.dismiss()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="dialog-subtitle">{{ message }}</p>
+      <input
+        type="password"
+        class="form-control"
+        [(ngModel)]="password"
+        (keydown.enter)="save()"
+        autofocus
+      />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="modal.dismiss()">Cancel</button>
+      <button class="btn btn-primary" [disabled]="!password" (click)="save()">Save with sudo</button>
+    </div>
+  `,
+})
+export class SudoPasswordDialogComponent {
+  @Input() message = 'Enter the sudo password to save this file.';
+  password = '';
+
+  constructor(public readonly modal: NgbActiveModal) {}
+
+  save(): void {
+    if (this.password) {
+      this.modal.close(this.password);
+    }
+  }
+}
+
 /** Linux-style rwx permission editor (Owner/Group/Other). */
 @Component({
   selector: 'sftp-xp-permission-dialog',

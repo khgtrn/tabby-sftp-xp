@@ -11,6 +11,7 @@ import {
   PermissionDialogComponent,
   PromptDialogComponent,
   PropertiesDialogComponent,
+  SudoPasswordDialogComponent,
 } from './dialogs/dialogs.component';
 import { EditorTabComponent } from './editor/editor-tab.component';
 import { ExplorerTabComponent } from './explorer/explorer-tab.component';
@@ -42,6 +43,7 @@ import { SftpXpThemeService } from './theme/theme.service';
     PromptDialogComponent,
     PermissionDialogComponent,
     PropertiesDialogComponent,
+    SudoPasswordDialogComponent,
   ],
 })
 export class SftpXpPluginModule {
