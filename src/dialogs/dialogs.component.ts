@@ -46,105 +46,46 @@ export class PromptDialogComponent {
   }
 }
 
-/** Connect dialog: pick a saved bookmark or enter SFTP connection details manually. */
+/** Prompts for a sudo password when retrying a permission-denied remote save with elevated privileges. */
 @Component({
-  selector: 'sftp-xp-connect-dialog',
+  selector: 'sftp-xp-sudo-password-dialog',
   styles: [dialogStyles],
   template: `
     <div class="modal-header">
       <div class="dialog-title">
-        <span class="dialog-icon"><i class="fas fa-plug"></i></span>
-        <div>
-          <h5 class="modal-title">Connect to SFTP</h5>
-          <div class="dialog-subtitle">Connect securely to a remote server.</div>
-        </div>
+        <span class="dialog-icon"><i class="fas fa-user-shield"></i></span>
+        <h5 class="modal-title">Sudo password required</h5>
       </div>
       <button class="dialog-close" type="button" title="Close" (click)="modal.dismiss()">
         <i class="fas fa-times"></i>
       </button>
     </div>
     <div class="modal-body">
-      <div class="field-group">
-        <label for="sftp-connect-host">Host</label>
-        <input
-          id="sftp-connect-host"
-          type="text"
-          class="form-control"
-          [(ngModel)]="options.host"
-          placeholder="example.com"
-        />
-      </div>
-      <div class="row g-3 field-group">
-        <div class="col-8">
-          <label for="sftp-connect-user">Username</label>
-          <input
-            id="sftp-connect-user"
-            type="text"
-            class="form-control"
-            [(ngModel)]="options.username"
-          />
-        </div>
-        <div class="col-4">
-          <label for="sftp-connect-port">Port</label>
-          <input
-            id="sftp-connect-port"
-            type="number"
-            class="form-control"
-            [(ngModel)]="options.port"
-          />
-        </div>
-      </div>
-      <div class="field-group">
-        <label for="sftp-connect-password">Password</label>
-        <input
-          id="sftp-connect-password"
-          type="password"
-          class="form-control"
-          [(ngModel)]="options.password"
-        />
-      </div>
-      <div class="field-group">
-        <label for="sftp-connect-key">Private key <span>(optional)</span></label>
-        <textarea
-          id="sftp-connect-key"
-          class="form-control"
-          rows="3"
-          [(ngModel)]="options.privateKey"
-        ></textarea>
-      </div>
+      <p class="dialog-subtitle">{{ message }}</p>
+      <input
+        type="password"
+        class="form-control"
+        [(ngModel)]="password"
+        (keydown.enter)="save()"
+        autofocus
+      />
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" (click)="modal.dismiss()">Cancel</button>
-      <button
-        class="btn btn-primary"
-        [disabled]="!options.host || !options.username"
-        (click)="connect()"
-      >
-        Connect
-      </button>
+      <button class="btn btn-primary" [disabled]="!password" (click)="save()">Save with sudo</button>
     </div>
   `,
 })
-export class ConnectDialogComponent {
-  options: { host: string; port: number; username: string; password: string; privateKey: string } =
-    {
-      host: '',
-      port: 22,
-      username: '',
-      password: '',
-      privateKey: '',
-    };
+export class SudoPasswordDialogComponent {
+  @Input() message = 'Enter the sudo password to save this file.';
+  password = '';
 
   constructor(public readonly modal: NgbActiveModal) {}
 
-  connect(): void {
-    this.modal.close({
-      host: this.options.host,
-      port: this.options.port || 22,
-      username: this.options.username,
-      password: this.options.password || undefined,
-      privateKey: this.options.privateKey || undefined,
-    });
+  save(): void {
+    if (this.password) {
+      this.modal.close(this.password);
+    }
   }
 }
 

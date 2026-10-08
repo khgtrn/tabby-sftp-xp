@@ -16,8 +16,12 @@ import {
   NotificationsService,
   PlatformService,
 } from 'tabby-core';
-import { getErrorMessage } from '../core/errors';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { getErrorMessage, isPermissionError, isSftpPermissionDeniedError } from '../core/errors';
+import { PrivilegedWriteService } from '../core/privileged-write.service';
+import { SudoPasswordDialogComponent } from '../dialogs/dialogs.component';
 import type { IFileSystem } from '../filesystem/models';
+import { SftpConnection, SudoAuthError } from '../sftp/sftp.service';
 import { TabbySftpFileSystem } from '../sftp/tabby-sftp-filesystem';
 import { SftpXpThemeService } from '../theme/theme.service';
 import { EditorCacheService } from './editor-cache.service';
@@ -104,6 +108,8 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
     private readonly platform: PlatformService,
     private readonly changeDetector: ChangeDetectorRef,
     private readonly theme: SftpXpThemeService,
+    private readonly privilegedWrite: PrivilegedWriteService,
+    private readonly ngbModal: NgbModal,
   ) {
     super(injector);
     this.#themeSubscription.add(this.#themeChanged());
@@ -328,8 +334,9 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
       return false;
     }
     this.saving = true;
+    this.#editor.updateOptions({ readOnly: true });
+    const content = this.#editor.getValue();
     try {
-      const content = this.#editor.getValue();
       await this.editorCache.writeLocal(this.#localPath, content);
       if (this.fs instanceof TabbySftpFileSystem && !this.fs.connected) {
         this.notifications.error(
@@ -345,20 +352,98 @@ export class EditorTabComponent extends BaseTabComponent implements OnInit, OnDe
       return true;
     } catch (error) {
       const message = getErrorMessage(error);
+      const canSudoLocal =
+        this.fs.kind === 'local' && isPermissionError(error) && PrivilegedWriteService.isSupported;
+      const canSudoRemote = this.fs instanceof SftpConnection && isSftpPermissionDeniedError(error);
+      const buttons = ['Retry', 'Discard', 'Keep local'];
+      if (canSudoLocal || canSudoRemote) {
+        buttons.push('Retry with sudo');
+      }
       const action = await this.platform.showMessageBox({
         type: 'error',
         message: `Failed to upload file: ${message}`,
-        buttons: ['Retry', 'Discard', 'Keep local'],
+        buttons,
         defaultId: 0,
         cancelId: 2,
       });
       if (action.response === 0) {
         this.saving = false;
+        this.#editor.updateOptions({ readOnly: false });
         return this.save();
+      }
+      if (canSudoLocal && action.response === 3) {
+        // `await` here is load-bearing, not redundant: a bare
+        // `return this.#retrySaveLocalWithSudo(content)` would let this
+        // `catch` block's completion reach the `finally` below immediately
+        // (synchronously), releasing `saving`/`readOnly` before the retry
+        // actually finishes — `return await` suspends until the retry's
+        // promise settles, so `finally` only runs once it's truly done.
+        return await this.#retrySaveLocalWithSudo(content);
+      }
+      if (canSudoRemote && action.response === 3) {
+        // Same reasoning as above.
+        return await this.#retryUploadWithSudo(this.fs as SftpConnection, content);
       }
       return false;
     } finally {
       this.saving = false;
+      this.#editor?.updateOptions({ readOnly: false });
+    }
+  }
+
+  async #retrySaveLocalWithSudo(content: string): Promise<boolean> {
+    try {
+      await this.privilegedWrite.writeLocalFile(this.filePath, Buffer.from(content, 'utf-8'));
+      this.dirty = false;
+      this.notifications.notice(`Saved ${this.fileName}`);
+      return true;
+    } catch (error) {
+      this.notifications.error(`Could not save with elevated privileges: ${getErrorMessage(error)}`);
+      return false;
+    }
+  }
+
+  async #retryUploadWithSudo(connection: SftpConnection, content: string): Promise<boolean> {
+    const data = Buffer.from(content, 'utf-8');
+    if (connection.password) {
+      try {
+        await connection.writePrivileged(this.filePath, data, connection.password);
+        this.dirty = false;
+        this.notifications.notice(`Saved ${this.fileName}`);
+        return true;
+      } catch (error) {
+        if (!(error instanceof SudoAuthError)) {
+          this.notifications.error(
+            `Could not save with elevated privileges: ${getErrorMessage(error)}`,
+          );
+          return false;
+        }
+        // Login password didn't work as the sudo password; fall through to prompt.
+      }
+    }
+    return this.#promptSudoPasswordAndRetry(connection, data);
+  }
+
+  async #promptSudoPasswordAndRetry(connection: SftpConnection, data: Buffer): Promise<boolean> {
+    const modal = this.ngbModal.open(SudoPasswordDialogComponent);
+    modal.componentInstance.message = `Enter the sudo password for this SFTP connection to save ${this.fileName}.`;
+    const password = await modal.result.catch(() => null);
+    if (!password) {
+      this.notifications.error(`Save cancelled: changes to ${this.fileName} were not saved.`);
+      return false;
+    }
+    try {
+      await connection.writePrivileged(this.filePath, data, password);
+      this.dirty = false;
+      this.notifications.notice(`Saved ${this.fileName}`);
+      return true;
+    } catch (error) {
+      if (error instanceof SudoAuthError) {
+        this.notifications.error('Incorrect sudo password.');
+        return this.#promptSudoPasswordAndRetry(connection, data);
+      }
+      this.notifications.error(`Could not save with elevated privileges: ${getErrorMessage(error)}`);
+      return false;
     }
   }
 

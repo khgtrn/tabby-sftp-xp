@@ -1,7 +1,17 @@
 import { Injectable } from '@angular/core'
 import { Client, SFTPWrapper } from 'ssh2'
 import { Readable, Writable } from 'stream'
+import { randomBytes } from 'crypto'
 import { FileEntry, IFileSystem, SftpConnectionOptions } from '../filesystem/models'
+import { shellQuotePosix } from '../core/shell-quote'
+
+/** Thrown by `SftpConnection.writePrivileged` specifically when `sudo` rejected the password, so callers can tell it apart from any other remote failure. */
+export class SudoAuthError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'SudoAuthError'
+  }
+}
 
 /** A single, live SFTP session over its own dedicated SSH2 connection. */
 export class SftpConnection implements IFileSystem {
@@ -10,6 +20,7 @@ export class SftpConnection implements IFileSystem {
   constructor(
     private readonly client: Client,
     private readonly sftp: SFTPWrapper,
+    readonly password?: string,
   ) {}
 
   async home(): Promise<string> {
@@ -102,6 +113,96 @@ export class SftpConnection implements IFileSystem {
     })
   }
 
+  /**
+   * Re-attempts a write with `sudo`, over the same SSH connection. Stages
+   * `data` in an unprivileged remote temp file (created exclusively, with
+   * owner-only permissions set atomically — see the design notes above),
+   * then copies it into place with a privileged `dd` that reads the temp
+   * file by path — so the exec channel's stdin carries only the sudo
+   * password, never file content.
+   */
+  async writePrivileged(remotePath: string, data: Buffer, password: string): Promise<void> {
+    const tempPath = `/tmp/.sftp-xp-sudo-${randomBytes(16).toString('hex')}`
+    let tempFileCreated = false
+    try {
+      await this.writeFileExclusive(tempPath, data)
+      tempFileCreated = true
+      await new Promise<void>((resolve, reject) => {
+        const command = `sudo -S -p '' dd if=${shellQuotePosix(tempPath)} of=${shellQuotePosix(remotePath)} status=none`
+        let settled = false
+        const timeoutId = setTimeout(() => {
+          if (settled) {
+            return
+          }
+          settled = true
+          reject(new Error('Timed out waiting for the remote sudo command to complete (30s).'))
+        }, 30_000)
+        const settle = (fn: () => void): void => {
+          if (settled) {
+            return
+          }
+          settled = true
+          clearTimeout(timeoutId)
+          fn()
+        }
+        this.client.exec(command, (err, stream) => {
+          if (err) {
+            settle(() => reject(err))
+            return
+          }
+          let stderr = ''
+          let exitCode: number | null = null
+          // Drain stdout so the channel can reach 'close' — a paused
+          // Readable that's never read never emits 'end', which ssh2's
+          // channel-close handling waits on.
+          stream.resume()
+          stream.stderr.on('data', (chunk: Buffer) => {
+            stderr += chunk.toString()
+          })
+          stream.on('exit', (code: number) => {
+            exitCode = code
+          })
+          stream.on('close', () => {
+            if (exitCode === 0) {
+              settle(resolve)
+              return
+            }
+            if (/incorrect password|try again|no password was provided/i.test(stderr)) {
+              settle(() => reject(new SudoAuthError(stderr.trim() || 'Incorrect sudo password')))
+            } else {
+              settle(() => reject(new Error(stderr.trim() || `sudo exited with code ${exitCode ?? 'unknown'}`)))
+            }
+          })
+          stream.stdin.write(`${password}\n`)
+          stream.stdin.end()
+        })
+      })
+    } finally {
+      // Only clean up a file this call actually created — if
+      // writeFileExclusive itself failed (e.g. a path collision), there is
+      // nothing of ours to remove, and the path might belong to something
+      // else entirely.
+      if (tempFileCreated) {
+        await this.remove(tempPath, false).catch(() => undefined)
+      }
+    }
+  }
+
+  /**
+   * Creates `path` exclusively (fails rather than silently overwriting if it
+   * already exists) with owner-only permissions set atomically at creation
+   * — there is never a window where the file exists with more permissive
+   * (e.g. default-umask) access.
+   */
+  private async writeFileExclusive(path: string, data: Buffer): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      const stream = this.sftp.createWriteStream(path, { flags: 'wx', mode: 0o600 })
+      stream.on('error', reject)
+      stream.on('close', () => resolve())
+      stream.end(data)
+    })
+  }
+
   createReadStream(filePath: string): Readable {
     return this.sftp.createReadStream(filePath) as unknown as Readable
   }
@@ -163,7 +264,7 @@ export class SftpConnectionManager {
       client.on('ready', () => {
         client.sftp((err, sftp) => {
           if (err) { reject(err); return }
-          resolve(new SftpConnection(client, sftp))
+          resolve(new SftpConnection(client, sftp, options.password))
         })
       })
       client.on('error', reject)
