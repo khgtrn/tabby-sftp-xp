@@ -2,6 +2,24 @@
 
 All notable changes to Tabby SFTP XP are documented in this file.
 
+## [1.3.0] - 2026-10-08
+
+### Added
+
+- Added multi-select in the file panels: <kbd>Ctrl</kbd>/<kbd>Shift</kbd> + click to select multiple items, or drag a selection rectangle starting from empty space.
+- Copy, cut, and delete now act on the entire selection, from both the keyboard shortcuts and the context menu.
+- Dragging a multi-item selection onto the other pane now uploads or downloads every selected file and folder, not just one.
+
+### Fixed
+
+- Fixed the file panel getting stuck on "Loading..." indefinitely after some SFTP operations finished.
+- Replaced the inline "Loading..." text with a spinner overlay so the previous file list stays visible while the panel refreshes.
+- Errors are now shown as toast notifications instead of inline text in the panel.
+
+### Changed
+
+- Increased the font size of the path input and path label for readability.
+
 ## [1.2.0] - 2026-08-27
 
 ### Added

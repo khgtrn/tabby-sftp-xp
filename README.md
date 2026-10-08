@@ -10,8 +10,9 @@ Manage local and remote files over SFTP, and edit remote files directly inside [
 
 - Browse local and remote files side by side using an existing Tabby SSH connection.
 - View file size, last-modified time, and symbolic POSIX permissions such as `-rw-r--r--`.
-- Create, rename, delete, copy, cut, paste, transfer, and bookmark files and folders.
-- Drag and drop files or folders between the local and remote panes to upload or download them.
+- Select multiple files and folders with <kbd>Ctrl</kbd>/<kbd>Shift</kbd> + click or by dragging a selection box.
+- Create, rename, delete, copy, cut, paste, transfer, and bookmark files and folders, including whole multi-item selections.
+- Drag and drop one file, folder, or an entire selection between the local and remote panes to upload or download it.
 - Edit local and remote files in a built-in Monaco editor with immediate upload on save.
 - Use the system clipboard to copy and paste between the editor and other applications.
 - Customize the explorer appearance and editor typography, minimap, and color theme.
@@ -32,13 +33,14 @@ Manage local and remote files over SFTP, and edit remote files directly inside [
 
 ### Manage and transfer files
 
-- Create, rename, delete, copy, and cut files or folders from the context menu.
-- Copy or cut an item in either pane, then paste it into a local or remote directory.
-- Drag a file or folder from one pane and drop it onto the other to upload or download it; drop it onto a specific folder row to transfer directly into that folder. The destination directory refreshes automatically once the transfer finishes, and the drop is rejected if the destination isn't writable.
+- Select multiple items with <kbd>Ctrl</kbd>/<kbd>Shift</kbd> + click, or drag a selection box starting from empty space in the file list.
+- Create, rename, delete, copy, and cut files or folders from the context menu; copy, cut, and delete act on the whole selection.
+- Copy or cut an item (or a selection) in either pane, then paste it into a local or remote directory.
+- Drag a file, folder, or a multi-item selection from one pane and drop it onto the other to upload or download it; drop it onto a specific folder row to transfer directly into that folder. The destination directory refreshes automatically once the transfer finishes, and the drop is rejected if the destination isn't writable.
 - View file properties, edit POSIX permissions, or copy an item's full path from its context menu.
-- Deletion always asks for confirmation before removing an item.
+- Deletion always asks for confirmation before removing an item or selection.
 
-You can also use <kbd>Ctrl</kbd> + <kbd>C</kbd>, <kbd>Ctrl</kbd> + <kbd>X</kbd>, <kbd>Ctrl</kbd> + <kbd>V</kbd>, and <kbd>Delete</kbd> after selecting an item.
+You can also use <kbd>Ctrl</kbd> + <kbd>C</kbd>, <kbd>Ctrl</kbd> + <kbd>X</kbd>, <kbd>Ctrl</kbd> + <kbd>V</kbd>, and <kbd>Delete</kbd> after selecting an item or a multi-item selection.
 
 ### Edit a remote file
 
