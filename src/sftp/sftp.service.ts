@@ -2,6 +2,15 @@ import { Injectable } from '@angular/core'
 import { Client, SFTPWrapper } from 'ssh2'
 import { Readable, Writable } from 'stream'
 import { FileEntry, IFileSystem, SftpConnectionOptions } from '../filesystem/models'
+import { shellQuotePosix } from '../core/shell-quote'
+
+/** Thrown by `SftpConnection.writePrivileged` specifically when `sudo` rejected the password, so callers can tell it apart from any other remote failure. */
+export class SudoAuthError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'SudoAuthError'
+  }
+}
 
 /** A single, live SFTP session over its own dedicated SSH2 connection. */
 export class SftpConnection implements IFileSystem {
@@ -10,6 +19,7 @@ export class SftpConnection implements IFileSystem {
   constructor(
     private readonly client: Client,
     private readonly sftp: SFTPWrapper,
+    readonly password?: string,
   ) {}
 
   async home(): Promise<string> {
@@ -102,6 +112,41 @@ export class SftpConnection implements IFileSystem {
     })
   }
 
+  /** Re-attempts a write with `sudo`, over the same SSH connection, via an exec channel. */
+  async writePrivileged(remotePath: string, data: Buffer, password: string): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      const command = `sudo -S -p '' dd of=${shellQuotePosix(remotePath)} status=none`
+      this.client.exec(command, (err, stream) => {
+        if (err) {
+          reject(err)
+          return
+        }
+        let stderr = ''
+        let exitCode = 0
+        stream.stderr.on('data', (chunk: Buffer) => {
+          stderr += chunk.toString()
+        })
+        stream.on('exit', (code: number) => {
+          exitCode = code
+        })
+        stream.on('close', () => {
+          if (exitCode === 0) {
+            resolve()
+            return
+          }
+          if (/incorrect password|try again|no password was provided/i.test(stderr)) {
+            reject(new SudoAuthError(stderr.trim() || 'Incorrect sudo password'))
+          } else {
+            reject(new Error(stderr.trim() || `sudo exited with code ${exitCode}`))
+          }
+        })
+        stream.stdin.write(`${password}\n`)
+        stream.stdin.write(data)
+        stream.stdin.end()
+      })
+    })
+  }
+
   createReadStream(filePath: string): Readable {
     return this.sftp.createReadStream(filePath) as unknown as Readable
   }
@@ -163,7 +208,7 @@ export class SftpConnectionManager {
       client.on('ready', () => {
         client.sftp((err, sftp) => {
           if (err) { reject(err); return }
-          resolve(new SftpConnection(client, sftp))
+          resolve(new SftpConnection(client, sftp, options.password))
         })
       })
       client.on('error', reject)
