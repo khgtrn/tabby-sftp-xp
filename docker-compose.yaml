@@ -6,12 +6,15 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    # Defaults to root (WSL). On native Linux set HOST_UID/HOST_GID in .env so
+    # dist/ and other generated files stay owned by the host user.
+    user: "${HOST_UID:-0}:${HOST_GID:-0}"
     ports:
       - 4200:4200
     volumes:
       - .:/app
       - node_modules:/app/node_modules
-      - pnpm_store:/root/.local/share/pnpm/store
+      - pnpm_store:/pnpm-store
     working_dir: /app
     stdin_open: true
     tty: true

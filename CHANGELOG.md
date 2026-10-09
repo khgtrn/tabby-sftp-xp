@@ -2,6 +2,12 @@
 
 All notable changes to Tabby SFTP XP are documented in this file.
 
+## [1.3.1] - 2026-10-09
+
+### Fixed
+
+- Fixed installing the plugin from Tabby's Plugin Manager failing with "Error in sftp-xp: [object Object]". The package no longer declares `peerDependencies`; npm tried to install Angular and Tabby packages next to the plugin and failed with an `ERESOLVE` conflict. These packages are provided by Tabby at runtime.
+
 ## [1.3.0] - 2026-10-08
 
 ### Added
