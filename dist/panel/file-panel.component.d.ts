@@ -6,6 +6,7 @@ import { ClipboardService } from '../filesystem/clipboard.service';
 import { DragDropService } from '../filesystem/drag-drop.service';
 import type { FileEntry, IFileSystem } from '../filesystem/models';
 import { TransferService } from '../filesystem/transfer.service';
+type SortKey = 'name' | 'size' | 'mtime';
 export declare class FilePanelComponent implements OnInit {
     #private;
     private readonly ngbModal;
@@ -30,6 +31,8 @@ export declare class FilePanelComponent implements OnInit {
     filteredEntries: FileEntry[];
     showFilter: boolean;
     filterText: string;
+    sortKey: SortKey;
+    sortDirection: 'asc' | 'desc';
     loading: boolean;
     selectedPaths: Set<string>;
     draggingPaths: Set<string>;
@@ -37,6 +40,8 @@ export declare class FilePanelComponent implements OnInit {
     isListDropTarget: boolean;
     constructor(ngbModal: NgbModal, notifications: NotificationsService, platform: PlatformService, app: AppService, config: ConfigService, bookmarkService: BookmarkService, transfer: TransferService, clipboard: ClipboardService, dragDrop: DragDropService, changeDetector: ChangeDetectorRef);
     ngOnInit(): Promise<void>;
+    setSort(key: SortKey): void;
+    getSortIcon(key: SortKey): string;
     canGoBack(): boolean;
     canGoForward(): boolean;
     goBack(): Promise<void>;
@@ -46,6 +51,7 @@ export declare class FilePanelComponent implements OnInit {
     refresh(): Promise<void>;
     editPath(): void;
     confirmPath(): Promise<void>;
+    cancelPathEdit(): void;
     toggleFilter(): void;
     onFilterChange(): void;
     open(entry: FileEntry): Promise<void>;
@@ -83,3 +89,4 @@ export declare class FilePanelComponent implements OnInit {
     /** Only used by the remote panel when it needs to (re)connect. */
     promptConnect(): Promise<Record<string, any> | null>;
 }
+export {};

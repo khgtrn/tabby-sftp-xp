@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import type { FileEntry } from '../filesystem/models';
+import type { FileEntry, IFileSystem } from '../filesystem/models';
 import { modeToPermissions, permissionsToMode, PosixPermissions } from '../filesystem/models';
 import dialogStyles from './dialogs.component.scss';
 
@@ -42,6 +42,70 @@ export class PromptDialogComponent {
   save(): void {
     if (this.value.trim()) {
       this.modal.close(this.value.trim());
+    }
+  }
+}
+
+/** Create a symbolic link: both paths are full paths with live path suggestions. */
+@Component({
+  selector: 'sftp-xp-symlink-dialog',
+  styles: [dialogStyles],
+  template: `
+    <div class="modal-header">
+      <div class="dialog-title">
+        <span class="dialog-icon"><i class="fas fa-link"></i></span>
+        <div>
+          <h5 class="modal-title">Create Symlink</h5>
+          <div class="dialog-subtitle">Local path will point to the destination path.</div>
+        </div>
+      </div>
+      <button class="dialog-close" type="button" title="Close" (click)="modal.dismiss()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label for="sftp-symlink-link">Local path</label>
+        <sftp-xp-path-input
+          inputId="sftp-symlink-link"
+          [fs]="fs"
+          [(value)]="linkPath"
+          [autofocus]="true"
+          (confirm)="create()"
+        ></sftp-xp-path-input>
+      </div>
+      <div class="field-group">
+        <label for="sftp-symlink-target">Destination path</label>
+        <sftp-xp-path-input
+          inputId="sftp-symlink-target"
+          [fs]="fs"
+          [(value)]="targetPath"
+          [includeFiles]="true"
+          (confirm)="create()"
+        ></sftp-xp-path-input>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="modal.dismiss()">Cancel</button>
+      <button class="btn btn-primary" [disabled]="!canCreate()" (click)="create()">Create</button>
+    </div>
+  `,
+})
+export class CreateSymlinkDialogComponent {
+  @Input() fs!: IFileSystem;
+  @Input() linkPath = '';
+  @Input() targetPath = '';
+
+  constructor(public readonly modal: NgbActiveModal) {}
+
+  canCreate(): boolean {
+    const link = this.linkPath.trim();
+    return !!link && !link.endsWith('/') && !!this.targetPath.trim();
+  }
+
+  create(): void {
+    if (this.canCreate()) {
+      this.modal.close({ linkPath: this.linkPath.trim(), targetPath: this.targetPath.trim() });
     }
   }
 }

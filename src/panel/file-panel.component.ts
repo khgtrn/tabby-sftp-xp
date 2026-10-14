@@ -12,6 +12,7 @@ import { BookmarkService } from '../bookmarks/bookmark.service';
 import { getErrorMessage } from '../core/errors';
 import {
   ConnectDialogComponent,
+  CreateSymlinkDialogComponent,
   PermissionDialogComponent,
   PromptDialogComponent,
   PropertiesDialogComponent,
@@ -22,8 +23,11 @@ import { DragDropService } from '../filesystem/drag-drop.service';
 import { isWritable, modeToSymbolicString } from '../filesystem/models';
 import type { FileEntry, IFileSystem } from '../filesystem/models';
 import { TransferService } from '../filesystem/transfer.service';
+import { trimTrailingSlash } from '../path-input/path-input.component';
 import template from './file-panel.component.html';
 import styles from './file-panel.component.scss';
+
+type SortKey = 'name' | 'size' | 'mtime';
 
 @Component({
   selector: 'sftp-xp-file-panel',
@@ -51,6 +55,8 @@ export class FilePanelComponent implements OnInit {
   filteredEntries: FileEntry[] = [];
   showFilter = false;
   filterText = '';
+  sortKey: SortKey = 'name';
+  sortDirection: 'asc' | 'desc' = 'asc';
   loading = false;
   selectedPaths = new Set<string>();
   draggingPaths = new Set<string>();
@@ -96,7 +102,10 @@ export class FilePanelComponent implements OnInit {
     try {
       const entries = await this.fs.list(newPath);
       this.path = newPath;
-      this.entries = this.#sortEntries(entries);
+      const showHidden = this.config.store.sftpXp.showHiddenFiles;
+      this.entries = this.#sortEntries(
+        entries.filter((e) => showHidden || !e.name.startsWith('.')),
+      );
       this.#updateFilteredList();
       if (pushHistory) {
         this.#history = this.#history.slice(0, this.#historyIndex + 1);
@@ -114,13 +123,49 @@ export class FilePanelComponent implements OnInit {
     }
   }
 
+  /**
+   * Groups are fixed: hidden folders, folders, hidden files, files. The chosen
+   * column and direction only order entries within each group.
+   */
   #sortEntries(entries: FileEntry[]): FileEntry[] {
-    const showHidden = this.config.store.sftpXp.showHiddenFiles;
-    return entries
-      .filter((e) => showHidden || !e.name.startsWith('.'))
-      .sort(
-        (a, b) => Number(b.isDirectory) - Number(a.isDirectory) || a.name.localeCompare(b.name),
-      );
+    const group = (e: FileEntry) => (e.isDirectory ? 0 : 2) + (e.name.startsWith('.') ? 0 : 1);
+    const direction = this.sortDirection === 'asc' ? 1 : -1;
+    const byName = (a: FileEntry, b: FileEntry) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    const byKey = (a: FileEntry, b: FileEntry) => {
+      switch (this.sortKey) {
+        case 'size':
+          return a.size - b.size;
+        case 'mtime':
+          return a.mtime - b.mtime;
+        default:
+          return byName(a, b);
+      }
+    };
+    return [...entries].sort(
+      (a, b) =>
+        group(a) - group(b) ||
+        direction * byKey(a, b) ||
+        byName(a, b),
+    );
+  }
+
+  setSort(key: SortKey): void {
+    if (this.sortKey === key) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortKey = key;
+      this.sortDirection = 'asc';
+    }
+    this.entries = this.#sortEntries(this.entries);
+    this.#updateFilteredList();
+  }
+
+  getSortIcon(key: SortKey): string {
+    if (this.sortKey !== key) {
+      return '';
+    }
+    return this.sortDirection === 'asc' ? 'fas fa-caret-up' : 'fas fa-caret-down';
   }
 
   canGoBack(): boolean {
@@ -167,12 +212,16 @@ export class FilePanelComponent implements OnInit {
     if (this.editingPath === null) {
       return;
     }
-    const target = this.editingPath;
+    const target = trimTrailingSlash(this.editingPath.trim());
     this.editingPath = null;
-    if (target === this.path) {
+    if (!target || target === this.path) {
       return;
     }
     await this.#navigate(target);
+  }
+
+  cancelPathEdit(): void {
+    this.editingPath = null;
   }
 
   toggleFilter(): void {
@@ -284,6 +333,7 @@ export class FilePanelComponent implements OnInit {
     const items: MenuItemOptions[] = [
       { label: 'New Folder', click: () => this.#createFolder() },
       { label: 'New File', click: () => this.#createFile() },
+      ...this.#symlinkMenuItem(),
       { label: 'Refresh', click: () => this.refresh() },
     ];
     if (this.clipboard.get()) {
@@ -323,6 +373,7 @@ export class FilePanelComponent implements OnInit {
           { label: 'Delete (Delete)', click: () => this.deleteSelection() },
           { label: 'New Folder', click: () => this.#createFolder(entry.path) },
           { label: 'New File', click: () => this.#createFile(entry.path) },
+          ...this.#symlinkMenuItem(entry),
           { label: 'Permissions', click: () => this.editPermissions(entry) },
           { label: 'Properties', click: () => this.showProperties(entry) },
           { label: 'Copy (Ctrl+C)', click: () => this.copySelection() },
@@ -334,6 +385,7 @@ export class FilePanelComponent implements OnInit {
           { label: 'Edit', click: () => this.editFile(entry) },
           { label: 'Rename', click: () => this.rename(entry) },
           { label: 'Delete (Delete)', click: () => this.deleteSelection() },
+          ...this.#symlinkMenuItem(entry),
           { label: 'Permissions', click: () => this.editPermissions(entry) },
           { label: 'Properties', click: () => this.showProperties(entry) },
           { label: 'Copy (Ctrl+C)', click: () => this.copySelection() },
@@ -370,6 +422,76 @@ export class FilePanelComponent implements OnInit {
       await this.refresh();
     } catch (error) {
       this.notifications.error(getErrorMessage(error));
+    }
+  }
+
+  /** Hidden when the filesystem (e.g. an older Tabby SFTP session) cannot create links. */
+  #symlinkMenuItem(target?: FileEntry): MenuItemOptions[] {
+    return this.fs.symlink
+      ? [{ label: 'Create Symlink', click: () => this.#createSymlink(target) }]
+      : [];
+  }
+
+  async #createSymlink(target?: FileEntry): Promise<void> {
+    const dirPrefix = this.path.endsWith('/') ? this.path : `${this.path}/`;
+    const modal = this.ngbModal.open(CreateSymlinkDialogComponent);
+    modal.componentInstance.fs = this.fs;
+    modal.componentInstance.linkPath = dirPrefix;
+    modal.componentInstance.targetPath = target?.path ?? dirPrefix;
+    const result: { linkPath: string; targetPath: string } | null = await modal.result.catch(
+      () => null,
+    );
+    if (!result || !this.fs.symlink) {
+      return;
+    }
+    const targetPath = trimTrailingSlash(result.targetPath);
+    const linkPath = trimTrailingSlash(result.linkPath);
+    try {
+      const existing = await this.#findEntry(linkPath);
+      if (existing && !existing.isSymlink) {
+        throw new Error(`"${linkPath}" already exists and is not a symlink`);
+      }
+      if (existing) {
+        const current = existing.linkTarget ? ` -> ${existing.linkTarget}` : '';
+        const answer = await this.platform.showMessageBox({
+          type: 'warning',
+          message: `Symlink "${linkPath}"${current} already exists. Replace it?`,
+          buttons: ['Replace', "Don't Replace"],
+          defaultId: 1,
+          cancelId: 1,
+        });
+        if (answer.response !== 0) {
+          return;
+        }
+        await this.#replaceSymlink(existing, targetPath);
+      } else {
+        await this.fs.symlink(targetPath, linkPath);
+      }
+      await this.refresh();
+    } catch (error) {
+      this.notifications.error(getErrorMessage(error));
+    }
+  }
+
+  /** Looks the entry up in its parent listing so dangling symlinks are found too (stat would follow them). */
+  async #findEntry(entryPath: string): Promise<FileEntry | undefined> {
+    const name = this.fs.basename(entryPath);
+    const siblings = await this.fs.list(this.fs.dirname(entryPath)).catch(() => []);
+    return siblings.find((entry) => entry.name === name);
+  }
+
+  /** Removes the old link, then restores it if creating the new one fails. */
+  async #replaceSymlink(existing: FileEntry, targetPath: string): Promise<void> {
+    const symlink = this.fs.symlink!.bind(this.fs);
+    // Never pass isDirectory: a link to a folder must be unlinked, not recursively deleted.
+    await this.fs.remove(existing.path, false);
+    try {
+      await symlink(targetPath, existing.path);
+    } catch (error) {
+      if (existing.linkTarget) {
+        await symlink(existing.linkTarget, existing.path).catch(() => undefined);
+      }
+      throw error;
     }
   }
 
@@ -530,7 +652,7 @@ export class FilePanelComponent implements OnInit {
     if (event.button !== 0 || !this.filteredEntries.length) {
       return;
     }
-    if (event.target instanceof HTMLElement && event.target.closest('.file-row')) {
+    if (event.target instanceof HTMLElement && event.target.closest('.file-row, .sortable-column')) {
       return;
     }
     event.preventDefault();

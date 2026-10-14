@@ -1,0 +1,26 @@
+<input
+  #input
+  type="text"
+  class="form-control"
+  spellcheck="false"
+  autocomplete="off"
+  [attr.id]="inputId"
+  [placeholder]="placeholder"
+  [ngModel]="value"
+  (ngModelChange)="onInput($event)"
+  (keydown)="onKeydown($event)"
+  (focus)="onFocus()"
+  (blur)="onBlur()"
+/>
+<div class="path-suggestions" *ngIf="suggestions.length">
+  <div
+    *ngFor="let entry of suggestions; let i = index"
+    class="path-suggestion"
+    [class.path-suggestion--active]="i === activeIndex"
+    (mousedown)="$event.preventDefault(); accept(i)"
+    (mouseenter)="activeIndex = i"
+  >
+    <i [class]="entry.isDirectory ? 'fas fa-folder' : 'far fa-file'"></i>
+    <span>{{ entry.name }}</span>
+  </div>
+</div>

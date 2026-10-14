@@ -15,6 +15,7 @@ export declare class SftpConnection implements IFileSystem {
     createFile(filePath: string): Promise<void>;
     remove(entryPath: string, isDirectory: boolean): Promise<void>;
     rename(oldPath: string, newPath: string): Promise<void>;
+    symlink(targetPath: string, linkPath: string): Promise<void>;
     chmod(entryPath: string, mode: number): Promise<void>;
     readFile(filePath: string): Promise<Buffer>;
     writeFile(filePath: string, data: Buffer): Promise<void>;

@@ -25,6 +25,17 @@
   }
 }
 
+.panel-title {
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--sftp-border-subtle);
+  color: var(--sftp-text-muted);
+  background: var(--sftp-surface-raised);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .toolbar {
   display: flex;
   min-height: 44px;
@@ -71,16 +82,35 @@
 }
 
 .path-bar {
+  display: flex;
   min-height: 41px;
+  align-items: center;
+  gap: 4px;
 
-  .form-control {
-    height: 32px;
-    min-height: 32px;
-    margin: 0;
-    padding: 6px 9px;
-    box-sizing: border-box;
-    font-size: 1rem;
-    line-height: 18px;
+  > .path-input,
+  > .path-label {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .filter-button {
+    display: inline-flex;
+    width: 31px;
+    height: 31px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    color: var(--sftp-text-muted);
+    border-radius: var(--sftp-radius-sm);
+    line-height: 1;
+
+    &:hover,
+    &.filter-button--active {
+      color: var(--sftp-accent);
+      background: var(--sftp-accent-soft);
+    }
   }
 }
 
@@ -89,27 +119,21 @@
   padding-bottom: 7px;
 }
 
+/* Matches the path input box exactly so switching to edit mode does not shift anything. */
 .path-label {
   overflow: hidden;
   height: 32px;
-  padding: 6px 9px;
+  padding: 6px 2px;
   box-sizing: border-box;
-  border: 1px solid transparent;
-  border-radius: var(--sftp-radius-sm);
-  color: var(--sftp-text);
+  color: var(--sftp-text-strong);
   font-size: 1rem;
+  line-height: 18px;
   cursor: text;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background-color 0.15s ease;
 
   &:hover {
-    color: var(--sftp-text-strong);
-    border-color: var(--sftp-border);
-    background: var(--sftp-surface-raised);
+    border-bottom-color: var(--sftp-text-muted);
   }
 }
 
@@ -208,6 +232,20 @@
   flex: 1;
 }
 
+.sortable-column {
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover,
+  &--active {
+    color: var(--sftp-text-strong);
+  }
+
+  i {
+    margin: 0 2px;
+  }
+}
+
 .file-modified-column,
 .file-modified {
   width: 138px;
@@ -268,6 +306,14 @@
   flex: 1;
   overflow-wrap: anywhere;
   white-space: normal;
+}
+
+.file-link-arrow {
+  color: var(--sftp-text-muted);
+}
+
+.file-link-target {
+  color: var(--sftp-accent);
 }
 
 .file-size,

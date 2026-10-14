@@ -2,6 +2,23 @@
 
 All notable changes to Tabby SFTP XP are documented in this file.
 
+## [1.4.0] - 2026-10-14
+
+### Added
+
+- Added sorting by `Name`, `Modified`, or `Size`: click a column header to sort, click it again to reverse the order. Entries stay grouped as hidden folders, folders, hidden files, then files, and each group is sorted on its own.
+- Added folder suggestions while typing in the path bar. Use <kbd>↑</kbd>/<kbd>↓</kbd> to move, <kbd>Tab</kbd> or <kbd>Enter</kbd> to accept, and <kbd>Esc</kbd> to close the list. Hidden folders are always suggested.
+- Symbolic links now show their destination in the `Name` column as `name -> destination`, with the destination highlighted.
+- Added **Create Symlink** to the context menu. The dialog takes a full link path and a full destination path, and both fields suggest paths as you type. On remote servers the link is created with `ln -s` over the existing SSH connection, because Tabby's SFTP session has no symlink request.
+- Creating a symlink where one already exists now asks whether to replace it. An existing file or folder that is not a symlink is never overwritten.
+- Each file panel now shows a `Local` or `Remote` title above its toolbar.
+
+### Changed
+
+- Moved the filter button from the toolbar to the start of the path bar. The button stays highlighted while the filter is open.
+- Restyled text inputs and selects as underlined fields without a box or background change. On focus, an accent line grows from the center without shifting the layout.
+- Select dropdown options now follow the plugin's light or dark theme.
+
 ## [1.3.1] - 2026-10-09
 
 ### Fixed

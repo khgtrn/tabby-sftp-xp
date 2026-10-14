@@ -30,9 +30,15 @@ export class SftpConnection implements IFileSystem {
     })
     // ssh2 includes attributes in the shallow readdir response, so avoid an
     // additional lstat call for every direct child.
-    return items
+    const entries = items
       .filter(item => item.filename !== '.' && item.filename !== '..')
       .map(item => this.#toFileEntry(this.join(dirPath, item.filename), item.attrs, item.filename))
+    await Promise.all(entries.filter(entry => entry.isSymlink).map(async entry => {
+      entry.linkTarget = await new Promise<string | undefined>(resolve => {
+        this.sftp.readlink(entry.path, (err, target) => resolve(err ? undefined : target))
+      })
+    }))
+    return entries
   }
 
   async stat(entryPath: string): Promise<FileEntry> {
@@ -74,6 +80,13 @@ export class SftpConnection implements IFileSystem {
   async rename(oldPath: string, newPath: string): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       this.sftp.rename(oldPath, newPath, err => err ? reject(err) : resolve())
+    })
+  }
+
+  async symlink(targetPath: string, linkPath: string): Promise<void> {
+    // ssh2 already compensates for OpenSSH's swapped symlink argument order.
+    await new Promise<void>((resolve, reject) => {
+      this.sftp.symlink(targetPath, linkPath, err => err ? reject(err) : resolve())
     })
   }
 

@@ -2,7 +2,17 @@
   display: block;
   min-width: 0;
   color: var(--sftp-text);
+  border-radius: inherit;
   background: var(--sftp-surface);
+}
+
+/* Rounded here too, for dialogs whose modal shell does not clip (see global.scss). */
+.modal-header {
+  border-radius: calc(var(--sftp-radius-xl) - 1px) calc(var(--sftp-radius-xl) - 1px) 0 0;
+}
+
+.modal-footer {
+  border-radius: 0 0 calc(var(--sftp-radius-xl) - 1px) calc(var(--sftp-radius-xl) - 1px);
 }
 
 .modal-header,

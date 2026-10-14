@@ -3,11 +3,20 @@ import { AppService, NotificationsService } from 'tabby-core';
 import { BaseTerminalTabComponent, TerminalDecorator } from 'tabby-terminal';
 import { getErrorMessage } from '../core/errors';
 import { ExplorerTabComponent } from '../explorer/explorer-tab.component';
-import { TabbySftpFileSystem, type TabbySftpSession } from '../sftp/tabby-sftp-filesystem';
+import {
+  createRemoteExec,
+  TabbySftpFileSystem,
+  type TabbySftpSession,
+  type TabbySshClient,
+} from '../sftp/tabby-sftp-filesystem';
 
 /** Represents an active SSH tab with an open SSH session. */
 type ActiveSshTab = BaseTerminalTabComponent<any> & {
-  sshSession: { open: boolean; openSFTP(): Promise<TabbySftpSession> } | null;
+  sshSession: {
+    open: boolean;
+    openSFTP(): Promise<TabbySftpSession>;
+    ssh?: Partial<TabbySshClient>;
+  } | null;
 };
 
 interface DecoratedTerminal {
@@ -147,7 +156,13 @@ export class SftpXpTerminalDecorator extends TerminalDecorator {
 
       const currentPath = (await tab.session?.getWorkingDirectory()) ?? '/';
       const session = await tab.sshSession.openSFTP();
-      const remoteFs = new TabbySftpFileSystem(session, currentPath);
+      const ssh = tab.sshSession.ssh;
+      // `ssh` is only an AuthenticatedSSHClient (with exec channels) once auth completed.
+      const exec =
+        ssh?.openSessionChannel && ssh.activateChannel
+          ? createRemoteExec(ssh as TabbySshClient)
+          : undefined;
+      const remoteFs = new TabbySftpFileSystem(session, currentPath, exec);
       this.#decoratedTerminals.get(tab)?.remoteFileSystems.add(remoteFs);
       this.app.openNewTabRaw({
         type: ExplorerTabComponent,

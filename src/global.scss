@@ -21,6 +21,7 @@
   --sftp-danger-soft: rgba(199, 80, 98, 0.1);
   --sftp-shadow: 0 7px 22px rgba(39, 46, 66, 0.07);
   --sftp-control-shadow: 0 0 0 3px rgba(82, 111, 186, 0.15);
+  --sftp-color-scheme: light;
   --sftp-radius-sm: 7px;
   --sftp-radius-md: 10px;
   --sftp-radius-lg: 13px;
@@ -48,6 +49,7 @@
   --sftp-danger-soft: rgba(242, 135, 153, 0.12);
   --sftp-shadow: 0 8px 24px rgba(10, 12, 22, 0.18);
   --sftp-control-shadow: 0 0 0 3px rgba(130, 170, 255, 0.18);
+  --sftp-color-scheme: dark;
 }
 
 /* Bootstrap refinements are scoped to this plugin's Angular roots. */
@@ -58,6 +60,7 @@
   sftp-xp-bookmark-manager,
   sftp-xp-prompt-dialog,
   sftp-xp-connect-dialog,
+  sftp-xp-symlink-dialog,
   sftp-xp-permission-dialog,
   sftp-xp-properties-dialog
 ) {
@@ -129,16 +132,33 @@
     color: var(--sftp-danger) !important;
   }
 
+  /* Material "standard" field: no box, just an underline. The focus line is a
+     separate 2px layer that grows from the centre, so focusing never shifts layout. */
   .form-control,
   .form-select {
     min-height: 38px;
+    padding-right: 2px;
+    padding-left: 2px;
     color: var(--sftp-text-strong);
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  /* Bootstrap draws the select arrow with background-image, so use the bottom border instead. */
+  .form-select {
+    // padding-right: 2.25rem;
     border-color: var(--sftp-border);
     border-radius: var(--sftp-radius-md);
     background-color: var(--sftp-surface-raised);
     transition:
-      border-color 0.15s ease,
-      box-shadow 0.15s ease;
+      border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    option {
+      background-color: var(--sftp-surface-raised);
+    }
   }
 
   .form-control-sm,
@@ -149,9 +169,14 @@
   .form-control:focus,
   .form-select:focus {
     color: var(--sftp-text-strong);
-    border-color: var(--sftp-accent);
-    background-color: var(--sftp-surface-raised);
-    box-shadow: var(--sftp-control-shadow);
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  .form-control:disabled,
+  .form-select:disabled {
+    background-color: transparent;
+    opacity: 0.6;
   }
 
   .form-control::placeholder {
@@ -187,12 +212,18 @@
   }
 }
 
+/* Let path suggestions drop out of the short symlink dialog instead of being clipped. */
+.modal-content:has(> sftp-xp-symlink-dialog) {
+  overflow: visible;
+}
+
 /* ng-bootstrap owns the modal shell, so scope its surface through its direct plugin child. */
 .modal-content:has(
   > :is(
     sftp-xp-bookmark-manager,
     sftp-xp-prompt-dialog,
     sftp-xp-connect-dialog,
+    sftp-xp-symlink-dialog,
     sftp-xp-permission-dialog,
     sftp-xp-properties-dialog
   )

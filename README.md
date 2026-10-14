@@ -9,7 +9,9 @@ Manage local and remote files over SFTP, and edit remote files directly inside [
 ## Features
 
 - Browse local and remote files side by side using an existing Tabby SSH connection.
-- View file size, last-modified time, and symbolic POSIX permissions such as `-rw-r--r--`.
+- View file size, last-modified time, and symbolic POSIX permissions such as `-rw-r--r--`, and sort by name, size, or modified time.
+- Type a path with live folder suggestions.
+- See where each symbolic link points, and create or replace symlinks on both local and remote sides.
 - Select multiple files and folders with <kbd>Ctrl</kbd>/<kbd>Shift</kbd> + click or by dragging a selection box.
 - Create, rename, delete, copy, cut, paste, transfer, and bookmark files and folders, including whole multi-item selections.
 - Drag and drop one file, folder, or an entire selection between the local and remote panes to upload or download it.
@@ -26,9 +28,11 @@ Manage local and remote files over SFTP, and edit remote files directly inside [
 ### Browse files
 
 - Double-click a folder to open it.
-- Click the current path to enter another path, then press <kbd>Enter</kbd>.
-- Use the toolbar to go back, forward, up one level, return home, refresh the directory, filter entries, or manage bookmarks.
+- Click the current path to enter another path, then press <kbd>Enter</kbd>. While typing, matching folders (including hidden ones) are suggested: use <kbd>↑</kbd>/<kbd>↓</kbd> to move, <kbd>Tab</kbd> or <kbd>Enter</kbd> to accept, and <kbd>Esc</kbd> to close the list.
+- Use the toolbar to go back, forward, up one level, return home, refresh the directory, or manage bookmarks. Click the filter icon at the start of the path bar to filter entries.
 - Review each item's modified time, symbolic POSIX permissions, and size. Metadata columns hide automatically when a panel becomes narrow so names remain readable.
+- Click the `Name`, `Modified`, or `Size` header to sort, and click it again to reverse the order. Hidden folders, folders, hidden files, and files always stay in their own groups.
+- Symbolic links show their destination next to the name, as `name -> destination`.
 - Right-click a file, folder, or empty area to see the available actions.
 
 ### Manage and transfer files
@@ -38,6 +42,7 @@ Manage local and remote files over SFTP, and edit remote files directly inside [
 - Copy or cut an item (or a selection) in either pane, then paste it into a local or remote directory.
 - Drag a file, folder, or a multi-item selection from one pane and drop it onto the other to upload or download it; drop it onto a specific folder row to transfer directly into that folder. The destination directory refreshes automatically once the transfer finishes, and the drop is rejected if the destination isn't writable.
 - View file properties, edit POSIX permissions, or copy an item's full path from its context menu.
+- Choose **Create Symlink** from the context menu, then enter the full link path and the full destination path; both fields suggest paths as you type. If a symlink already exists at that path, you can choose to replace it or keep it. Remote symlinks are created with `ln -s` over the SSH connection, so the server needs a POSIX shell.
 - Deletion always asks for confirmation before removing an item or selection.
 
 You can also use <kbd>Ctrl</kbd> + <kbd>C</kbd>, <kbd>Ctrl</kbd> + <kbd>X</kbd>, <kbd>Ctrl</kbd> + <kbd>V</kbd>, and <kbd>Delete</kbd> after selecting an item or a multi-item selection.

@@ -7,6 +7,7 @@ export declare class LocalFsService implements IFileSystem {
     home(): Promise<string>;
     list(dirPath: string): Promise<FileEntry[]>;
     stat(entryPath: string): Promise<FileEntry>;
+    symlink(targetPath: string, linkPath: string): Promise<void>;
     mkdir(dirPath: string): Promise<void>;
     createFile(filePath: string): Promise<void>;
     remove(entryPath: string, isDirectory: boolean): Promise<void>;

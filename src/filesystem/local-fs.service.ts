@@ -24,7 +24,16 @@ export class LocalFsService implements IFileSystem {
         const entryPath = this.join(dirPath, child.name);
         try {
           const stats = await fsp.lstat(entryPath);
-          return this.#toFileEntry(entryPath, stats, child.isDirectory(), child.isSymbolicLink());
+          const entry = this.#toFileEntry(
+            entryPath,
+            stats,
+            child.isDirectory(),
+            child.isSymbolicLink(),
+          );
+          if (entry.isSymlink) {
+            entry.linkTarget = await fsp.readlink(entryPath).catch(() => undefined);
+          }
+          return entry;
         } catch {
           // The entry may disappear between readdir and lstat, or be inaccessible.
           return null;
@@ -56,6 +65,11 @@ export class LocalFsService implements IFileSystem {
       owner: stats.uid,
       group: stats.gid,
     };
+  }
+
+  async symlink(targetPath: string, linkPath: string): Promise<void> {
+    // Without an explicit type Node detects file vs. directory links itself on Windows.
+    await fsp.symlink(targetPath, linkPath);
   }
 
   async mkdir(dirPath: string): Promise<void> {

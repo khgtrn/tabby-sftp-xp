@@ -1,5 +1,5 @@
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import type { FileEntry } from '../filesystem/models';
+import type { FileEntry, IFileSystem } from '../filesystem/models';
 import { PosixPermissions } from '../filesystem/models';
 /** Simple single-text-field prompt, used for rename / new file / new folder. */
 export declare class PromptDialogComponent {
@@ -8,6 +8,16 @@ export declare class PromptDialogComponent {
     value: string;
     constructor(modal: NgbActiveModal);
     save(): void;
+}
+/** Create a symbolic link: both paths are full paths with live path suggestions. */
+export declare class CreateSymlinkDialogComponent {
+    readonly modal: NgbActiveModal;
+    fs: IFileSystem;
+    linkPath: string;
+    targetPath: string;
+    constructor(modal: NgbActiveModal);
+    canCreate(): boolean;
+    create(): void;
 }
 /** Connect dialog: pick a saved bookmark or enter SFTP connection details manually. */
 export declare class ConnectDialogComponent {

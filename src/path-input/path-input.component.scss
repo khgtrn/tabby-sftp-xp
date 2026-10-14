@@ -1,0 +1,65 @@
+:host {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+/* Compact variant used in the panel path bar: matches the read-only path label box. */
+:host(.path-input--compact) .form-control {
+  height: 32px;
+  min-height: 32px;
+  margin: 0;
+  padding: 6px 2px;
+  box-sizing: border-box;
+  font-size: 1rem;
+  line-height: 18px;
+}
+
+.path-suggestions {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  left: 0;
+  z-index: 10;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--sftp-border-subtle);
+  border-radius: var(--sftp-radius-sm);
+  background: var(--sftp-surface-raised);
+  box-shadow: var(--sftp-shadow);
+  scrollbar-color: var(--sftp-border) transparent;
+  scrollbar-width: thin;
+}
+
+.path-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  overflow: hidden;
+  border-radius: var(--sftp-radius-sm);
+  color: var(--sftp-text);
+  cursor: pointer;
+  white-space: nowrap;
+
+  i {
+    width: 1em;
+    color: var(--sftp-text-muted);
+    text-align: center;
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &--active {
+    color: var(--sftp-accent);
+    background: var(--sftp-accent-soft);
+
+    i {
+      color: var(--sftp-accent);
+    }
+  }
+}

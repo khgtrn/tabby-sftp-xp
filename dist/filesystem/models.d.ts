@@ -6,6 +6,8 @@ export interface FileEntry {
     path: string;
     isDirectory: boolean;
     isSymlink: boolean;
+    /** Raw symlink destination as stored in the link (may be relative). Only set by `list()`. */
+    linkTarget?: string;
     size: number;
     /** Last modified time, ms since epoch. */
     mtime: number;
@@ -39,6 +41,8 @@ export interface IFileSystem {
     remove(entryPath: string, isDirectory: boolean): Promise<void>;
     rename(oldPath: string, newPath: string): Promise<void>;
     chmod(entryPath: string, mode: number): Promise<void>;
+    /** Creates `linkPath` pointing at `targetPath`. Absent when the backend cannot create links. */
+    symlink?(targetPath: string, linkPath: string): Promise<void>;
     readFile(filePath: string): Promise<Buffer>;
     writeFile(filePath: string, data: Buffer): Promise<void>;
     createReadStream(filePath: string): Readable;

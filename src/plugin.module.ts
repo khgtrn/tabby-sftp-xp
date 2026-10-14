@@ -9,6 +9,7 @@ import { BookmarkManagerComponent } from './bookmarks/bookmark-manager.component
 import { SftpXpConfigProvider } from './config/config.provider';
 import {
   ConnectDialogComponent,
+  CreateSymlinkDialogComponent,
   PermissionDialogComponent,
   PromptDialogComponent,
   PropertiesDialogComponent,
@@ -16,6 +17,7 @@ import {
 import { EditorTabComponent } from './editor/editor-tab.component';
 import { ExplorerTabComponent } from './explorer/explorer-tab.component';
 import { FilePanelComponent } from './panel/file-panel.component';
+import { PathInputComponent } from './path-input/path-input.component';
 import { SftpXpSettingsTabProvider } from './settings/settings-tab.provider';
 import { SftpXpSettingsTabComponent } from './settings/sftp-xp-settings-tab.component';
 import { SftpXpTerminalDecorator } from './tabby/terminal-decorator';
@@ -31,11 +33,13 @@ import { SftpXpThemeService } from './theme/theme.service';
   declarations: [
     ExplorerTabComponent,
     FilePanelComponent,
+    PathInputComponent,
     EditorTabComponent,
     SftpXpSettingsTabComponent,
     BookmarkManagerComponent,
     PromptDialogComponent,
     ConnectDialogComponent,
+    CreateSymlinkDialogComponent,
     PermissionDialogComponent,
     PropertiesDialogComponent,
   ],

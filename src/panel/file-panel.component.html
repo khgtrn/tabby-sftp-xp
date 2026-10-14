@@ -1,4 +1,6 @@
 <div #panelRoot class="file-panel" tabindex="0" (keydown)="onPanelKeydown($event)">
+  <div class="panel-title">{{ side === 'remote' ? 'Remote' : 'Local' }}</div>
+
   <div class="toolbar">
     <button
       class="btn btn-sm history-button"
@@ -31,21 +33,28 @@
     <button class="btn btn-sm" (click)="addCurrentPathBookmark()" title="Bookmark this path">
       <i class="fas fa-plus"></i>
     </button>
-    <button class="btn btn-sm" (click)="toggleFilter()" title="Filter">
-      <i class="fas fa-filter"></i>
-    </button>
   </div>
 
   <div class="path-bar">
-    <input
+    <button
+      class="btn btn-sm filter-button"
+      [class.filter-button--active]="showFilter"
+      (click)="toggleFilter()"
+      title="Filter"
+    >
+      <i class="fas fa-filter"></i>
+    </button>
+    <sftp-xp-path-input
       *ngIf="editingPath !== null; else pathLabel"
-      type="text"
-      class="form-control form-control-sm"
-      [(ngModel)]="editingPath"
-      (keydown.enter)="confirmPath()"
-      (blur)="confirmPath()"
-      autofocus
-    />
+      class="path-input path-input--compact"
+      [fs]="fs"
+      [value]="editingPath"
+      (valueChange)="editingPath = $event"
+      [autofocus]="true"
+      (confirm)="confirmPath()"
+      (cancel)="cancelPathEdit()"
+      (inputBlur)="confirmPath()"
+    ></sftp-xp-path-input>
     <ng-template #pathLabel>
       <div class="path-label" (click)="editPath()">{{ path }}</div>
     </ng-template>
@@ -74,10 +83,28 @@
     (drop)="onListDrop($event)"
   >
     <div class="file-list-header" *ngIf="filteredEntries.length">
-      <span class="file-name-column">Name</span>
-      <span class="file-modified-column">Modified</span>
+      <span
+        class="file-name-column sortable-column"
+        [class.sortable-column--active]="sortKey === 'name'"
+        (click)="setSort('name')"
+      >
+        Name <i [class]="getSortIcon('name')"></i>
+      </span>
+      <span
+        class="file-modified-column sortable-column"
+        [class.sortable-column--active]="sortKey === 'mtime'"
+        (click)="setSort('mtime')"
+      >
+        Modified <i [class]="getSortIcon('mtime')"></i>
+      </span>
       <span class="file-permissions-column">Permissions</span>
-      <span class="file-size-column">Size</span>
+      <span
+        class="file-size-column sortable-column"
+        [class.sortable-column--active]="sortKey === 'size'"
+        (click)="setSort('size')"
+      >
+        <i [class]="getSortIcon('size')"></i> Size
+      </span>
     </div>
     <div
       *ngFor="let entry of filteredEntries"
@@ -97,7 +124,12 @@
       (drop)="onEntryDrop($event, entry)"
     >
       <i [class]="getIcon(entry)"></i>
-      <span class="file-name">{{ entry.name }}</span>
+      <span class="file-name">
+        {{ entry.name }}<ng-container *ngIf="entry.linkTarget">
+          <span class="file-link-arrow">&nbsp;&nbsp;&nbsp;-&gt;&nbsp;&nbsp;&nbsp;</span>
+          <span class="file-link-target">{{ entry.linkTarget }}</span>
+        </ng-container>
+      </span>
       <span class="file-modified">{{ entry.mtime | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
       <span class="file-permissions">{{ getPermissions(entry) }}</span>
       <span class="file-size">{{ entry.isDirectory ? '' : entry.size + ' B' }}</span>
