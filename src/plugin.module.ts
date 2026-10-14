@@ -26,8 +26,6 @@ import { SftpXpThemeService } from './theme/theme.service';
   providers: [
     { provide: ConfigProvider, useClass: SftpXpConfigProvider, multi: true },
     { provide: TerminalDecorator, useClass: SftpXpTerminalDecorator, multi: true },
-    // Hotkey is temporarily disabled.
-    // { provide: HotkeyProvider, useClass: SftpXpHotkeyProvider, multi: true },
     { provide: SettingsTabProvider, useClass: SftpXpSettingsTabProvider, multi: true },
   ],
   declarations: [
