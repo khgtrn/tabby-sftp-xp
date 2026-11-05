@@ -87,6 +87,19 @@
   align-items: center;
   gap: 4px;
 
+  // Keep the embedded editor visually identical to the read-only path label.
+  // Scope this through the panel's path bar so other path inputs retain their styling.
+  > sftp-xp-path-input.path-input--compact ::ng-deep .form-control,
+  > sftp-xp-path-input.path-input--compact ::ng-deep .form-control:focus,
+  > sftp-xp-path-input.path-input--compact ::ng-deep .form-control:focus-visible {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    box-shadow: none;
+    color: var(--sftp-text-strong);
+    background: transparent;
+  }
+
   > .path-input,
   > .path-label {
     min-width: 0;

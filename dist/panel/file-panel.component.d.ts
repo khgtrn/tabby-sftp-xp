@@ -24,6 +24,7 @@ export declare class FilePanelComponent implements OnInit {
     set filterInput(input: ElementRef<HTMLInputElement> | undefined);
     fs: IFileSystem;
     side: 'local' | 'remote';
+    remoteLabel: string;
     initialPath: string | null;
     path: string;
     editingPath: string | null;

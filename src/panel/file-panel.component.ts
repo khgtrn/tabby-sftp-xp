@@ -47,6 +47,7 @@ export class FilePanelComponent implements OnInit {
 
   @Input() fs!: IFileSystem;
   @Input() side: 'local' | 'remote' = 'local';
+  @Input() remoteLabel = 'Remote';
   @Input() initialPath: string | null = null;
 
   path = '/';
