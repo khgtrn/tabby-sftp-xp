@@ -163,10 +163,15 @@ export class SftpXpTerminalDecorator extends TerminalDecorator {
           ? createRemoteExec(ssh as TabbySshClient)
           : undefined;
       const remoteFs = new TabbySftpFileSystem(session, currentPath, exec);
+      const profile = (tab as any).profile;
+      const profileOptions = profile?.options;
+      let remoteLabel = 'Remote';
+      let remoteHost = (profile?.name || profile?.title || profileOptions?.host) ?? '';
+      if (remoteHost != null && remoteHost != '') remoteLabel = remoteLabel + ' - ' + remoteHost;
       this.#decoratedTerminals.get(tab)?.remoteFileSystems.add(remoteFs);
       this.app.openNewTabRaw({
         type: ExplorerTabComponent,
-        inputs: { remoteFs },
+        inputs: { remoteFs, remoteLabel, remoteHost },
       });
     } catch (error) {
       this.notifications.error(`Don't open SFTP-XP: ${getErrorMessage(error)}`);

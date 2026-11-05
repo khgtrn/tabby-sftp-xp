@@ -1,5 +1,5 @@
 <div #panelRoot class="file-panel" tabindex="0" (keydown)="onPanelKeydown($event)">
-  <div class="panel-title">{{ side === 'remote' ? 'Remote' : 'Local' }}</div>
+  <div class="panel-title">{{ side === 'remote' ? remoteLabel : 'Local' }}</div>
 
   <div class="toolbar">
     <button

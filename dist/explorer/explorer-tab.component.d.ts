@@ -13,6 +13,8 @@ export declare class ExplorerTabComponent extends BaseTabComponent implements On
     /** Set by whoever opens this tab (toolbar button / context menu) to auto-connect. */
     connectionOptions: SftpConnectionOptions | null;
     remoteFs: IFileSystem | null;
+    remoteLabel: string;
+    remoteHost: string;
     connecting: boolean;
     connectError: string | null;
     disconnectedMessage: string | null;

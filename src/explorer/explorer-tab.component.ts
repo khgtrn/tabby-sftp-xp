@@ -20,6 +20,8 @@ export class ExplorerTabComponent extends BaseTabComponent implements OnInit, On
   connectionOptions: SftpConnectionOptions | null = null;
 
   remoteFs: IFileSystem | null = null;
+  remoteLabel = 'Remote';
+  remoteHost = '';
   connecting = false;
   connectError: string | null = null;
   disconnectedMessage: string | null = null;
@@ -40,28 +42,32 @@ export class ExplorerTabComponent extends BaseTabComponent implements OnInit, On
     this.icon = 'fas fa-exchange-alt';
     this.setTitle('SFTP Explorer');
     if (this.remoteFs) {
-      this.setTitle('SFTP-XP');
+      this.#updateTabTitle();
       if (this.remoteFs instanceof TabbySftpFileSystem) {
         this.#connectionSubscription.add(
           this.remoteFs.disconnected$.subscribe((reason) => {
             this.remoteFs = null;
             this.disconnectedMessage = reason;
-            this.setTitle('SFTP-XP (disconnected)');
+            this.#updateTabTitle(true);
             this.changeDetector.detectChanges();
           }),
         );
       }
     } else if (this.connectionOptions) {
+      this.remoteLabel = this.connectionOptions.host;
       await this.connect(this.connectionOptions);
     }
   }
 
   async connect(options: SftpConnectionOptions): Promise<void> {
+    this.remoteLabel = options.host;
+    this.remoteHost = options.host;
+    this.#updateTabTitle();
     this.connecting = true;
     this.connectError = null;
     try {
       this.remoteFs = await this.connectionManager.connect(options);
-      this.setTitle(`SFTP: ${options.host}`);
+      this.#updateTabTitle();
     } catch (error) {
       const message = getErrorMessage(error);
       this.connectError = message;
@@ -69,6 +75,11 @@ export class ExplorerTabComponent extends BaseTabComponent implements OnInit, On
     } finally {
       this.connecting = false;
     }
+  }
+
+  #updateTabTitle(disconnected = false): void {
+    const prefix = this.remoteHost ? `${this.remoteHost} - ` : '';
+    this.setTitle(`${prefix}SFTP-XP${disconnected ? ' (disconnected)' : ''}`);
   }
 
   async canClose(): Promise<boolean> {
