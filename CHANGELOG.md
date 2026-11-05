@@ -2,6 +2,17 @@
 
 All notable changes to Tabby SFTP XP are documented in this file.
 
+## [1.4.1] - 2026-11-05
+
+### Added
+
+- Explorer tabs now include the remote host in the tab title, for example `111.22.33.444 - SFTP-XP`.
+- The remote panel title now shows the SSH profile name or host when available; direct SFTP connections show the host.
+
+### Changed
+
+- Styled the path editor in the file panel to match the read-only path label, including while focused.
+
 ## [1.4.0] - 2026-10-14
 
 ### Added

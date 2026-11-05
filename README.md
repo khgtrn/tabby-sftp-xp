@@ -9,6 +9,7 @@ Manage local and remote files over SFTP, and edit remote files directly inside [
 ## Features
 
 - Browse local and remote files side by side using an existing Tabby SSH connection.
+- Identify the remote connection by its host in the explorer tab title and by its profile name or host in the remote panel.
 - View file size, last-modified time, and symbolic POSIX permissions such as `-rw-r--r--`, and sort by name, size, or modified time.
 - Type a path with live folder suggestions.
 - See where each symbolic link points, and create or replace symlinks on both local and remote sides.
@@ -22,7 +23,7 @@ Manage local and remote files over SFTP, and edit remote files directly inside [
 ## Usage
 
 1. Open an SSH profile in Tabby and wait for the connection to be established.
-2. Click **SFTP-XP** in the SSH tab toolbar. A new explorer tab opens using the current SSH connection.
+2. Click **SFTP-XP** in the SSH tab toolbar. A new explorer tab opens using the current SSH connection and shows the remote host in its tab title.
 3. Use the left pane for local files and the right pane for files on the remote server.
 
 ### Browse files
